@@ -122,7 +122,7 @@ function playQueuedTrack(roomId, room, index) {
   const item = room.musicQueue[index];
   if (!item) return false;
   room.musicIndex = index;
-  room.youtube = { videoId: item.videoId, isPlaying: true, currentTime: 0, updatedAt: Date.now() };
+  room.youtube = { videoId: item.videoId, isPlaying: false, currentTime: 0, updatedAt: Date.now() };
   io.to(roomId).emit('youtube:load', { videoId: item.videoId });
   broadcastMusicQueue(roomId, room);
   return true;
