@@ -145,3 +145,20 @@ Example directory value (replace with actual deployed service URLs):
 
 ### Launch limits and next production steps
 The first deployment is a single global room server; players worldwide can join the same invite room, but latency depends on distance to that server. Do not advertise regional choices until the corresponding services are actually deployed and their URLs are configured. Room state currently lives in server memory, so multiple instances/regions do not share public rooms or persistent profiles. Before running several active regions, add a shared Redis Socket.IO adapter and persistent room/account storage. Voice is browser peer-to-peer mesh; TURN credentials improve connectivity and an SFU is recommended for larger groups. Free hosting is for an initial test and can sleep when idle.
+
+## Windows desktop launcher
+
+The Windows installer is built by GitHub Actions after the pull request checks pass. The desktop launcher is a lightweight secure Electron client for the hosted multiplayer game; it does not bundle a local multiplayer server.
+
+1. Download the `TomAndGrace-Setup-1.4.0.exe` artifact from the successful **Build Tom&Grace Windows installer** workflow run (or the release asset when a versioned release is published).
+2. Install and open Tom&Grace.
+3. On first launch, enter the HTTPS URL of the deployed Tom&Grace server. The launcher remembers this address on that Windows PC.
+4. If the server has not been deployed yet, the installer can still be built, but players cannot enter the shared world until a reachable server URL exists.
+
+For local development, `http://localhost:3000` is accepted by the desktop launcher. Remote plain-HTTP URLs are rejected.
+
+## Regional and multiplayer deployment status
+
+Regional selection is discovery and routing support, not automatic multi-region replication. A region must first be deployed and its real HTTPS URL added to `REGION_DIRECTORY_JSON`. Invite rooms are pinned to their selected server. The current room map is in process memory, so a room exists only on the server instance that created it; players in different regions cannot share the same room until shared room state and a Socket.IO adapter are implemented. User accounts, friends and long-term progress are not yet backed by persistent storage.
+
+The free Render Blueprint is included in `render.yaml`, but creating a Render service may require billing verification on the account even when the selected compute plan is free. Do not assume a public game URL exists until a deployment completes and its `/health` endpoint has been checked.
