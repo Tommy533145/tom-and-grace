@@ -465,15 +465,16 @@ io.on('connection', (socket) => {
     if (typeof videoId !== 'string' || !/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
       return callback?.({ ok: false, error: 'Paste a valid YouTube video link or ID.' });
     }
-    if (room.musicQueue.length >= 50) return callback?.({ ok: false, error: 'The shared queue is full (50 tracks maximum).' });
-    room.musicQueue.push({
+    // The shared YouTube panel is intentionally a simple one-link/one-Share
+    // experience. Replace the current room video instead of silently appending
+    // tracks to a hidden queue that players cannot see or control.
+    room.musicQueue = [{
       id: crypto.randomBytes(5).toString('hex'),
       videoId,
       addedBy: player.name
-    });
-    const index = room.musicQueue.length - 1;
-    if (room.musicIndex < 0) playQueuedTrack(roomId, room, index);
-    else broadcastMusicQueue(roomId, room);
+    }];
+    room.musicIndex = 0;
+    playQueuedTrack(roomId, room, 0);
     callback?.({ ok: true, queue: publicMusicQueue(room) });
   });
 
