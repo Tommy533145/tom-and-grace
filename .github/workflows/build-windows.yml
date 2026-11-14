@@ -1,0 +1,27 @@
+name: Build Tom&Grace Windows installer
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install
+      - name: Build installer
+        run: npm run build:win
+        env:
+          TG_GAME_URL: ${{ vars.TG_GAME_URL }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TomAndGrace-Windows-Installer
+          path: dist/*.exe
+          if-no-files-found: error
