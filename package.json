@@ -1,8 +1,8 @@
 {
   "name": "tom-and-grace",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "private": true,
-  "description": "A multiplayer 3D social world with penthouse, city, cars, proximity voice, room chat, sleep and dance activities, synchronized YouTube, and Spotify embeds.",
+  "description": "A multiplayer 3D social world with penthouse, city, cars, proximity voice, room chat, sleep and dance activities, shared YouTube music queue and personal Spotify embeds.",
   "main": "electron/main.cjs",
   "scripts": {
     "start": "node server.js",
