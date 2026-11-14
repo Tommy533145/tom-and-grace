@@ -86,7 +86,7 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   a.clientEmit('music:next', {}, (response) => { nextMusic = response; });
   assert.equal(nextMusic?.ok, false, 'next is safely refused when there is no following track');
   let invalidMusic;
-  b.clientEmit('music:queue:add', { videoId: 'not-a-video' }, (response) => { invalidMusic = response; });
+  b.clientEmit('music:queue:add', { videoId: 'bad' }, (response) => { invalidMusic = response; });
   assert.equal(invalidMusic?.ok, false, 'invalid YouTube identifiers are rejected');
 
   let chatResponse;
