@@ -132,7 +132,7 @@ The browser game remains the primary cross-platform way to play. Players can joi
 - Build on Windows with `npm install` followed by `npm run build:win`.
 - The installer is generated in `dist/` as `TomAndGrace-Setup-1.4.0.exe`.
 - GitHub Actions can build it from **Actions → Build Tom&Grace Windows installer** or when a `v*` release tag is pushed.
-- Set the GitHub Actions repository variable `TG_GAME_URL` to the deployed HTTPS game URL before distributing the installer. The default URL is `https://tom-and-grace-worldwide.onrender.com`.
+- On first launch, enter the real HTTPS address of the deployed game server. The Windows app saves it securely in the local app-data folder so players do not need to enter it again.
 
 ### Regional server discovery
 - `/api/regions` advertises the current server plus any configured regional servers.
