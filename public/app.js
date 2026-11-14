@@ -1932,7 +1932,6 @@ $('musicNextButton').addEventListener('click', playNextMusicTrack);
 
 function loadYoutubeVideo(videoId, remote) {
   $('tvPlaceholder').classList.add('hidden');
-  $('youtubeInput').value = `https://youtu.be/${videoId}`;
   if (!youtubeReady || !youtube) {
     pendingYoutubeState = { videoId, isPlaying: true, currentTime: 0 };
     return;
@@ -1945,7 +1944,6 @@ function loadYoutubeVideo(videoId, remote) {
 function applyInitialYoutubeState(state) {
   if (!state?.videoId) return;
   $('tvPlaceholder').classList.add('hidden');
-  $('youtubeInput').value = `https://youtu.be/${state.videoId}`;
   if (!youtubeReady || !youtube) {
     pendingYoutubeState = state;
     return;
