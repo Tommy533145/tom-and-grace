@@ -64,6 +64,30 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   b.clientEmit('room:join', { roomId: roomResponse.roomId, profile: { name: 'Grace', character: 'grace' } }, (response) => { joinResponse = response; });
   assert.equal(joinResponse?.ok, true, 'second player joins');
   assert.equal(joinResponse.players.length, 2, 'both players are in the room');
+  assert.deepEqual(joinResponse.musicQueue, [], 'new rooms start with an empty shared music queue');
+
+  let firstMusicAdd;
+  a.clientEmit('music:queue:add', { videoId: 'dQw4w9WgXcQ' }, (response) => { firstMusicAdd = response; });
+  assert.equal(firstMusicAdd?.ok, true, 'first shared music track is accepted');
+  assert.equal(firstMusicAdd.queue.queue.length, 1, 'first track is in the shared queue');
+  assert.ok(a.received.some((event) => event.event === 'youtube:load' && event.payload.videoId === 'dQw4w9WgXcQ'), 'first track starts for the queue owner');
+  assert.ok(b.received.some((event) => event.event === 'youtube:load' && event.payload.videoId === 'dQw4w9WgXcQ'), 'first track starts for every room member');
+  assert.ok(b.received.some((event) => event.event === 'music:queue:update' && event.payload.queue.length === 1), 'queue update is broadcast room-wide');
+
+  let secondMusicAdd;
+  b.clientEmit('music:queue:add', { videoId: '9bZkp7q19f0' }, (response) => { secondMusicAdd = response; });
+  assert.equal(secondMusicAdd?.ok, true, 'second player can add a shared track');
+  assert.equal(secondMusicAdd.queue.queue.length, 2, 'second track is appended to the shared queue');
+  let selectedMusic;
+  a.clientEmit('music:play', { index: 1 }, (response) => { selectedMusic = response; });
+  assert.equal(selectedMusic?.ok, true, 'room member can select a queued track');
+  assert.ok(b.received.some((event) => event.event === 'youtube:load' && event.payload.videoId === '9bZkp7q19f0'), 'selected track is synchronized to other players');
+  let nextMusic;
+  a.clientEmit('music:next', {}, (response) => { nextMusic = response; });
+  assert.equal(nextMusic?.ok, false, 'next is safely refused when there is no following track');
+  let invalidMusic;
+  b.clientEmit('music:queue:add', { videoId: 'not-a-video' }, (response) => { invalidMusic = response; });
+  assert.equal(invalidMusic?.ok, false, 'invalid YouTube identifiers are rejected');
 
   let chatResponse;
   b.clientEmit('chat:send', { text: 'Hello from Grace' }, (response) => { chatResponse = response; });
@@ -106,6 +130,7 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   assert.equal(elevatorBack?.zone, 'penthouse', 'elevator returns to the penthouse');
 
   console.log('PASS simulated two-player room create/join');
+  console.log('PASS shared music queue, selection, room-wide playback sync and validation');
   console.log('PASS room-wide chat and voice signaling');
   console.log('PASS bed proximity check, sleeping, wake-by-movement');
   console.log('PASS shared dance selection and animation state');
