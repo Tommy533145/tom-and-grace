@@ -186,3 +186,14 @@ h1 em { color: var(--rose); font-weight: 600; }
 .spotify-open-link { display: block; color: #a7ddb5; font-size: 9px; text-align: center; text-decoration: none; }
 .spotify-open-link:hover { text-decoration: underline; }
 @media (max-width: 560px) { .activities-panel { top: 52px; right: 10px; }.activities-panel .wardrobe-heading strong { font-size: 19px; } }
+
+/* Worldwide server selector */
+.region-label { margin-top: 17px; }
+.region-picker-row { display: flex; align-items: center; gap: 9px; }
+.region-select { flex: 1; min-width: 0; color-scheme: dark; }
+.region-status { flex: 0 0 auto; max-width: 130px; color: #9f9aa5; font-size: 9px; text-align: right; }
+.region-select:disabled { opacity: .65; cursor: not-allowed; }
+@media (max-width: 420px) {
+  .region-picker-row { align-items: stretch; flex-direction: column; }
+  .region-status { max-width: none; text-align: left; }
+}
