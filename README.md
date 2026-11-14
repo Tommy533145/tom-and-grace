@@ -92,7 +92,7 @@ EthioDeploy is the selected alternative for the first hosted test. Its published
 
 1. Open [EthioDeploy](https://ethiodeploy.com/) and sign in with GitHub.
 2. Install its GitHub App and grant access only to the `Tommy533145/tom-and-grace` repository.
-3. Choose **New Project**, select this repository, and select the `feature/worldwide-windows-client` branch if the dashboard offers branch selection. Do not deploy the default branch unless it contains the required changes.
+3. Choose **New Project** and select this repository. The Free plan does not include branch previews, so it deploys the repository's default branch. The game changes currently live on `feature/worldwide-windows-client` and its pull request is still open; deploy only after that pull request is reviewed and merged, or after the repository owner changes the default branch deliberately. Do not deploy the default branch while it lacks these changes.
 4. Confirm the detected Node.js service uses `npm install` and `npm start`. The app already reads `process.env.PORT`, binds to `0.0.0.0`, and exposes `/health`.
 5. Wait for the health check to pass, then open the generated HTTPS `.ethiodeploy.app` URL and verify `/health` returns JSON with `"ok": true`.
 6. Use that real URL in the Windows launcher on first launch. Share browser invite links only after the URL has been tested.
