@@ -23,7 +23,33 @@ const DANCE_STYLES = new Set(['groove', 'disco', 'salsa', 'bounce', 'sway']);
 const BED_SPOTS = { 'bed-one': { x: -5.15, z: -5.2 }, 'bed-two': { x: 4.05, z: -5.2 } };
 
 app.use(express.static(path.join(__dirname, 'public')));
-app.get('/health', (_req, res) => res.json({ ok: true, app: 'Tom&Grace', edition: 'Social World 1.3', maxPlayersPerRoom: MAX_PLAYERS_PER_ROOM, features: ['room-chat', 'proximity-voice', 'elevator-city', 'synchronized-movement', 'sleep', 'dance', 'spotify-embed'] }));
+const REGION_ID = process.env.REGION_ID || 'global';
+const REGION_NAME = process.env.REGION_NAME || 'Global server';
+function getRegionDirectory(req) {
+  let configured = [];
+  try {
+    const parsed = JSON.parse(process.env.REGION_DIRECTORY_JSON || '[]');
+    if (Array.isArray(parsed)) configured = parsed;
+  } catch (_error) {
+    console.warn('Ignoring invalid REGION_DIRECTORY_JSON');
+  }
+  const protocol = String(req.headers['x-forwarded-proto'] || req.protocol || 'https').split(',')[0];
+  const ownUrl = (process.env.PUBLIC_BASE_URL || `${protocol}://${req.get('host')}`).replace(/\/$/, '');
+  const regions = configured
+    .filter((item) => item && typeof item.id === 'string' && typeof item.name === 'string' && typeof item.url === 'string' && /^https:\/\//i.test(item.url))
+    .map((item) => ({ id: item.id.slice(0, 24), name: item.name.slice(0, 60), url: item.url.replace(/\/$/, '') }));
+  if (!regions.some((item) => item.id === REGION_ID)) regions.unshift({ id: REGION_ID, name: REGION_NAME, url: ownUrl });
+  return regions;
+}
+app.get('/api/regions', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ currentRegion: REGION_ID, regions: getRegionDirectory(req) });
+});
+app.get('/health', (_req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Cache-Control', 'no-store');
+  res.json({ ok: true, app: 'Tom&Grace', edition: 'Worldwide-ready 1.4', region: REGION_ID, maxPlayersPerRoom: MAX_PLAYERS_PER_ROOM, features: ['room-chat', 'proximity-voice', 'elevator-city', 'synchronized-movement', 'sleep', 'dance', 'spotify-embed', 'regional-discovery'] });
+});
 
 function cleanText(value, fallback = '', max = 20) {
   if (typeof value !== 'string') return fallback;
