@@ -33,6 +33,13 @@
         <div class="setup-heading"><div><span class="section-kicker">FIRST THINGS FIRST</span><h2>Who are you today?</h2></div><div class="step-count">01 <i>/ 01</i></div></div>
         <label class="field-label" for="playerName">YOUR NAME</label>
         <input id="playerName" class="text-field" maxlength="18" placeholder="Enter your name" autocomplete="nickname" />
+        <label class="field-label region-label" for="regionSelect">SERVER REGION</label>
+        <div class="region-picker-row">
+          <select id="regionSelect" class="text-field region-select" aria-label="Choose game server region">
+            <option value="auto">Automatic (recommended)</option>
+          </select>
+          <span id="regionStatus" class="region-status" role="status" aria-live="polite">Checking server…</span>
+        </div>
         <div class="field-label character-label">CHOOSE YOUR CHARACTER</div>
         <div class="character-grid" id="characterGrid">
           <button class="character-option selected" data-character="tom" type="button"><span class="avatar avatar-tom"><i class="hair hair-dark"></i><i class="face"></i><i class="body body-blue"></i></span><span class="character-name">Tom</span><span class="character-caption">The easygoing one</span></button>
