@@ -86,19 +86,18 @@ This uses Spotify's official embeds and does not use the Web Playback SDK or Spo
 
 Voice is optional and starts only after a player clicks **Join voice** and grants microphone access. Each player who wants to talk should also join. Click **Mute mic** to mute your microphone while continuing to hear nearby players. Use HTTPS after deployment; `http://localhost:3000` is allowed for local development. A public STUN server is used by default. For restrictive networks, add temporary TURN credentials to `public/config.js` using `VOICE_TURN_URL`, `VOICE_TURN_USERNAME` and `VOICE_TURN_CREDENTIAL`. For larger rooms, a dedicated SFU is recommended over peer-to-peer mesh.
 
-## Deploy online with Render
+## Deploy online with EthioDeploy (free, no card)
 
-The repository includes `render.yaml` as a Render Blueprint. To publish it:
+EthioDeploy is the selected alternative for the first hosted test. Its published free plan supports Node.js/Express, Socket.IO WebSockets, HTTPS, one project, and a managed database option without a credit card. The free web service has 256 MB RAM, 0.5 CPU, and sleeps after 30 minutes without traffic; the first visitor after idle may wait for it to wake. This is suitable for a small test, not a guaranteed always-on worldwide production launch. See the [EthioDeploy Node.js guide](https://ethiodeploy.com/deploy/nodejs) and [Express/Socket.IO guide](https://ethiodeploy.com/deploy/express).
 
-1. Create a GitHub repository and upload the contents of the extracted `tom-and-grace` folder (the `server.js`, `package.json`, `public/`, and `render.yaml` should be at the repository root).
-2. Sign in to Render and connect your GitHub account.
-3. In Render, choose **New → Blueprint** and select the repository containing `render.yaml`.
-4. Review and create the `tom-and-grace` web service.
-5. When the deploy finishes, open the HTTPS `onrender.com` URL and create a room. Send the invite link to another player.
+1. Open [EthioDeploy](https://ethiodeploy.com/) and sign in with GitHub.
+2. Install its GitHub App and grant access only to the `Tommy533145/tom-and-grace` repository.
+3. Choose **New Project**, select this repository, and select the `feature/worldwide-windows-client` branch if the dashboard offers branch selection. Do not deploy the default branch unless it contains the required changes.
+4. Confirm the detected Node.js service uses `npm install` and `npm start`. The app already reads `process.env.PORT`, binds to `0.0.0.0`, and exposes `/health`.
+5. Wait for the health check to pass, then open the generated HTTPS `.ethiodeploy.app` URL and verify `/health` returns JSON with `"ok": true`.
+6. Use that real URL in the Windows launcher on first launch. Share browser invite links only after the URL has been tested.
 
-Render web services support WebSockets and HTTPS. The included blueprint uses `npm install`, `npm start` and `/health` for health checks. A free Render instance may spin down after inactivity, so the first request after idle time may take a little longer.
-
-**I cannot publish it into your Render/GitHub accounts from this project archive alone.** You must connect your own GitHub and Render accounts and approve the deploy. The ZIP is ready for that process.
+EthioDeploy deploys from GitHub after you authorize its GitHub App. I cannot sign in to your account or grant repository access on your behalf. Do not share your GitHub password or access token in chat.
 
 ## Current prototype limitations
 
@@ -141,14 +140,14 @@ The browser game remains the primary cross-platform way to play. Players can joi
 - The lobby measures server health latency and supports automatic or manual region choice. Invite links stay on the host region so friends in other countries can join the same room.
 
 Example directory value (replace with actual deployed service URLs):
-`[{"id":"asia","name":"Asia (Singapore)","url":"https://YOUR-ASIA-SERVICE.onrender.com"},{"id":"europe","name":"Europe (Frankfurt)","url":"https://YOUR-EUROPE-SERVICE.onrender.com"},{"id":"north-america","name":"North America (Ohio)","url":"https://YOUR-NORTH-AMERICA-SERVICE.onrender.com"}]`
+`[{"id":"asia","name":"Asia (Singapore)","url":"https://YOUR-ASIA-SERVICE.ethiodeploy.app"},{"id":"europe","name":"Europe (Frankfurt)","url":"https://YOUR-EUROPE-SERVICE.ethiodeploy.app"},{"id":"north-america","name":"North America (Ohio)","url":"https://YOUR-NORTH-AMERICA-SERVICE.ethiodeploy.app"}]`
 
 ### Launch limits and next production steps
 The first deployment is a single global room server; players worldwide can join the same invite room, but latency depends on distance to that server. Do not advertise regional choices until the corresponding services are actually deployed and their URLs are configured. Room state currently lives in server memory, so multiple instances/regions do not share public rooms or persistent profiles. Before running several active regions, add a shared Redis Socket.IO adapter and persistent room/account storage. Voice is browser peer-to-peer mesh; TURN credentials improve connectivity and an SFU is recommended for larger groups. Free hosting is for an initial test and can sleep when idle.
 
 ## Windows desktop launcher
 
-The Windows installer is built by GitHub Actions after the pull request checks pass. The desktop launcher is a lightweight secure Electron client for the hosted multiplayer game; it does not bundle a local multiplayer server.
+The Windows installer is built by GitHub Actions when the configured workflow runs successfully. The desktop launcher is a lightweight secure Electron client for the hosted multiplayer game; it does not bundle a local multiplayer server.
 
 1. Download the `TomAndGrace-Setup-1.4.0.exe` artifact from the successful **Build Tom&Grace Windows installer** workflow run (or the release asset when a versioned release is published).
 2. Install and open Tom&Grace.
@@ -161,4 +160,4 @@ For local development, `http://localhost:3000` is accepted by the desktop launch
 
 Regional selection is discovery and routing support, not automatic multi-region replication. A region must first be deployed and its real HTTPS URL added to `REGION_DIRECTORY_JSON`. Invite rooms are pinned to their selected server. The current room map is in process memory, so a room exists only on the server instance that created it; players in different regions cannot share the same room until shared room state and a Socket.IO adapter are implemented. User accounts, friends and long-term progress are not yet backed by persistent storage.
 
-The free Render Blueprint is included in `render.yaml`, but creating a Render service may require billing verification on the account even when the selected compute plan is free. Do not assume a public game URL exists until a deployment completes and its `/health` endpoint has been checked.
+The repository still contains `render.yaml` as an optional Render configuration, but Render account billing verification blocked the previous attempt. EthioDeploy is the selected no-card test host. Do not assume a public game URL exists until its deployment completes and its `/health` endpoint has been checked.
