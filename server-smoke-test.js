@@ -49,7 +49,7 @@ Module._load = function(request, parent, isMain) {
   return originalLoad.call(this, request, parent, isMain);
 };
 http.createServer = () => ({ listen: () => ({}) });
-require(path.join(__dirname, '..', 'server.js'));
+require(path.join(__dirname, 'server.js'));
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
