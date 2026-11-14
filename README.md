@@ -1,4 +1,4 @@
-# Tom&Grace — Social World Edition 1.3
+# Tom&Grace — Worldwide-ready Social World Edition 1.4
 
 A multiplayer 3D social-house prototype built with Three.js, Express and Socket.IO. It is designed as a relaxed hangout world: no quests, tasks, timers or scoring.
 
@@ -122,3 +122,26 @@ tom-and-grace/
     ├── config.js  # optional TURN settings only; no Spotify ID
     └── app.js
 ```
+
+ 
+## Worldwide-ready launch and Windows desktop edition
+
+The browser game remains the primary cross-platform way to play. Players can join from a modern browser without installing anything. The Windows installer is an optional desktop launcher that opens the same hosted multiplayer game, so desktop and browser players share rooms and invites.
+
+### Windows installer
+- Build on Windows with `npm install` followed by `npm run build:win`.
+- The installer is generated in `dist/` as `TomAndGrace-Setup-1.4.0.exe`.
+- GitHub Actions can build it from **Actions → Build Tom&Grace Windows installer** or when a `v*` release tag is pushed.
+- Set the GitHub Actions repository variable `TG_GAME_URL` to the deployed HTTPS game URL before distributing the installer. The default URL is `https://tom-and-grace-worldwide.onrender.com`.
+
+### Regional server discovery
+- `/api/regions` advertises the current server plus any configured regional servers.
+- `REGION_ID`, `REGION_NAME`, and `PUBLIC_BASE_URL` identify the current deployment.
+- `REGION_DIRECTORY_JSON` may contain a JSON array of `{ "id", "name", "url" }` entries. All region URLs must use HTTPS.
+- The lobby measures server health latency and supports automatic or manual region choice. Invite links stay on the host region so friends in other countries can join the same room.
+
+Example directory value (replace with actual deployed service URLs):
+`[{"id":"asia","name":"Asia (Singapore)","url":"https://YOUR-ASIA-SERVICE.onrender.com"},{"id":"europe","name":"Europe (Frankfurt)","url":"https://YOUR-EUROPE-SERVICE.onrender.com"},{"id":"north-america","name":"North America (Ohio)","url":"https://YOUR-NORTH-AMERICA-SERVICE.onrender.com"}]`
+
+### Launch limits and next production steps
+The first deployment is a single global room server; players worldwide can join the same invite room, but latency depends on distance to that server. Do not advertise regional choices until the corresponding services are actually deployed and their URLs are configured. Room state currently lives in server memory, so multiple instances/regions do not share public rooms or persistent profiles. Before running several active regions, add a shared Redis Socket.IO adapter and persistent room/account storage. Voice is browser peer-to-peer mesh; TURN credentials improve connectivity and an SFU is recommended for larger groups. Free hosting is for an initial test and can sleep when idle.
