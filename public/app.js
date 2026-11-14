@@ -1830,11 +1830,17 @@ function setupYoutubePlayer() {
         modestbranding: 1,
         playsinline: 1,
         enablejsapi: 1,
-        origin: window.location.origin
+        origin: window.location.origin,
+        widget_referrer: window.location.href
       },
       events: {
         onReady: () => {
           youtubeReady = true;
+          const iframe = youtube.getIframe?.();
+          if (iframe) {
+            iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+            iframe.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen');
+          }
           if (pendingYoutubeState?.videoId) {
             const pending = pendingYoutubeState;
             pendingYoutubeState = null;
@@ -1843,7 +1849,16 @@ function setupYoutubePlayer() {
         },
         onStateChange: onYoutubeStateChange,
         onError: (event) => {
-          showToast(event.data === 101 || event.data === 150 ? 'This video does not allow playback on other websites.' : 'YouTube could not play that video. Try another one.');
+          const messages = {
+            2: 'That YouTube link is invalid. Try a different video.',
+            5: 'YouTube could not decode this video in the embedded player.',
+            100: 'This YouTube video was removed or is private.',
+            101: 'The owner does not allow this video to play inside other websites.',
+            150: 'The owner does not allow this video to play inside other websites.',
+            153: 'YouTube blocked the embed because browser referrer information was unavailable. Refresh the page and try again.'
+          };
+          showYoutubeTapToPlay(true);
+          showToast(messages[event.data] || 'YouTube could not play that video. Try another one.');
         }
       }
     });
@@ -1930,14 +1945,23 @@ $('musicInput').addEventListener('keydown', (event) => {
 });
 $('musicNextButton').addEventListener('click', playNextMusicTrack);
 
+function showYoutubeTapToPlay(show = true) {
+  const button = $('youtubeTapToPlay');
+  if (button) button.classList.toggle('hidden', !show);
+}
+
 function loadYoutubeVideo(videoId, remote) {
   $('tvPlaceholder').classList.add('hidden');
   if (!youtubeReady || !youtube) {
-    pendingYoutubeState = { videoId, isPlaying: true, currentTime: 0 };
+    pendingYoutubeState = { videoId, isPlaying: false, currentTime: 0 };
+    showYoutubeTapToPlay(true);
     return;
   }
+  // Cue first: a Socket.IO round-trip is not a browser user gesture, so autoplay
+  // is commonly blocked. Each player gets a clear, one-tap Play control.
   youtubeSyncGuard = Boolean(remote);
-  youtube.loadVideoById({ videoId, startSeconds: 0 });
+  youtube.cueVideoById({ videoId, startSeconds: 0 });
+  showYoutubeTapToPlay(true);
   setTimeout(() => { youtubeSyncGuard = false; }, 1200);
 }
 
@@ -1946,12 +1970,13 @@ function applyInitialYoutubeState(state) {
   $('tvPlaceholder').classList.add('hidden');
   if (!youtubeReady || !youtube) {
     pendingYoutubeState = state;
+    showYoutubeTapToPlay(true);
     return;
   }
   const seconds = Math.max(0, Number(state.currentTime) || 0);
   youtubeSyncGuard = true;
-  if (state.isPlaying) youtube.loadVideoById({ videoId: state.videoId, startSeconds: seconds });
-  else youtube.cueVideoById({ videoId: state.videoId, startSeconds: seconds });
+  youtube.cueVideoById({ videoId: state.videoId, startSeconds: seconds });
+  showYoutubeTapToPlay(true);
   setTimeout(() => { youtubeSyncGuard = false; }, 1400);
 }
 
@@ -1967,6 +1992,8 @@ function applyRemoteYoutubePlayback(isPlaying, currentTime) {
 
 function onYoutubeStateChange(event) {
   $('tvPlaceholder').classList.add('hidden');
+  if (event.data === window.YT.PlayerState.PLAYING) showYoutubeTapToPlay(false);
+  else if ([window.YT.PlayerState.CUED, window.YT.PlayerState.PAUSED, window.YT.PlayerState.ENDED].includes(event.data)) showYoutubeTapToPlay(true);
   if (youtubeSyncGuard || !activeRoomId || !youtube) return;
   const state = event.data;
   if (state === window.YT.PlayerState.PLAYING || state === window.YT.PlayerState.PAUSED || state === window.YT.PlayerState.ENDED) {
@@ -1974,6 +2001,15 @@ function onYoutubeStateChange(event) {
     socket.emit('youtube:playback', { isPlaying, currentTime: youtube.getCurrentTime() || 0 });
   }
 }
+
+$('youtubeTapToPlay').addEventListener('click', () => {
+  if (!youtubeReady || !youtube) {
+    showToast('YouTube is still loading. Please try again in a moment.');
+    return;
+  }
+  showYoutubeTapToPlay(false);
+  youtube.playVideo();
+});
 
 setInterval(() => {
   if (!activeRoomId || !youtubeReady || !youtube || youtube.getPlayerState?.() !== 1) return;
