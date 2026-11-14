@@ -140,7 +140,7 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   assert.equal(elevatorBack?.zone, 'penthouse', 'elevator returns to the penthouse');
 
   console.log('PASS simulated two-player room create/join');
-  console.log('PASS shared music queue, selection, room-wide playback sync and validation');
+  console.log('PASS shared YouTube replacement, late-join sync, room-wide broadcast and validation');
   console.log('PASS room-wide chat and voice signaling');
   console.log('PASS bed proximity check, sleeping, wake-by-movement');
   console.log('PASS shared dance selection and animation state');
