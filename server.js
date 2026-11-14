@@ -48,7 +48,7 @@ app.get('/api/regions', (req, res) => {
 app.get('/health', (_req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Cache-Control', 'no-store');
-  res.json({ ok: true, app: 'Tom&Grace', edition: 'Worldwide-ready 1.4', region: REGION_ID, maxPlayersPerRoom: MAX_PLAYERS_PER_ROOM, features: ['room-chat', 'proximity-voice', 'elevator-city', 'synchronized-movement', 'sleep', 'dance', 'spotify-embed', 'regional-discovery'] });
+  res.json({ ok: true, app: 'Tom&Grace', edition: 'Shared Music Room 1.5', region: REGION_ID, maxPlayersPerRoom: MAX_PLAYERS_PER_ROOM, features: ['room-chat', 'proximity-voice', 'elevator-city', 'synchronized-movement', 'sleep', 'dance', 'shared-music-queue', 'spotify-personal-embed', 'regional-discovery'] });
 });
 
 function cleanText(value, fallback = '', max = 20) {
@@ -110,6 +110,24 @@ function projectedYoutubeState(state) {
   return yt;
 }
 
+function publicMusicQueue(room) {
+  return { queue: room.musicQueue.map((item) => ({ ...item })), currentIndex: room.musicIndex };
+}
+
+function broadcastMusicQueue(roomId, room) {
+  io.to(roomId).emit('music:queue:update', publicMusicQueue(room));
+}
+
+function playQueuedTrack(roomId, room, index) {
+  const item = room.musicQueue[index];
+  if (!item) return false;
+  room.musicIndex = index;
+  room.youtube = { videoId: item.videoId, isPlaying: true, currentTime: 0, updatedAt: Date.now() };
+  io.to(roomId).emit('youtube:load', { videoId: item.videoId });
+  broadcastMusicQueue(roomId, room);
+  return true;
+}
+
 function createVehicles() {
   return new Map([
     ['sunset-coupe', { id: 'sunset-coupe', position: { x: 13.3, z: 4.8 }, rotationY: 0, driverId: null }],
@@ -158,7 +176,9 @@ function joinRoom(socket, roomId, profile, callback) {
       players: new Map(),
       vehicles: createVehicles(),
       chat: [],
-      youtube: { videoId: '', isPlaying: false, currentTime: 0, updatedAt: Date.now() }
+      youtube: { videoId: '', isPlaying: false, currentTime: 0, updatedAt: Date.now() },
+      musicQueue: [],
+      musicIndex: -1
     };
     rooms.set(roomId, room);
   }
@@ -201,7 +221,9 @@ function joinRoom(socket, roomId, profile, callback) {
     players: publicPlayers(room),
     vehicles: publicVehicles(room),
     chat: room.chat.slice(-50),
-    youtube: projectedYoutubeState(room.youtube)
+    youtube: projectedYoutubeState(room.youtube),
+    musicQueue: room.musicQueue.map((item) => ({ ...item })),
+    musicIndex: room.musicIndex
   });
   io.to(roomId).emit('room:players', publicPlayers(room));
   io.to(roomId).emit('system:notice', { text: `${player.name} arrived at the penthouse.` });
@@ -433,6 +455,49 @@ io.on('connection', (socket) => {
       rotationY: vehicle.rotationY,
       driverId: socket.id
     });
+  });
+
+  socket.on('music:queue:add', ({ videoId } = {}, callback) => {
+    const roomId = socket.data.roomId;
+    const room = roomId && getRoom(roomId);
+    const player = room?.players.get(socket.id);
+    if (!room || !player) return callback?.({ ok: false, error: 'Join a room before adding music.' });
+    if (typeof videoId !== 'string' || !/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+      return callback?.({ ok: false, error: 'Paste a valid YouTube video link or ID.' });
+    }
+    if (room.musicQueue.length >= 50) return callback?.({ ok: false, error: 'The shared queue is full (50 tracks maximum).' });
+    room.musicQueue.push({
+      id: crypto.randomBytes(5).toString('hex'),
+      videoId,
+      addedBy: player.name
+    });
+    const index = room.musicQueue.length - 1;
+    if (room.musicIndex < 0) playQueuedTrack(roomId, room, index);
+    else broadcastMusicQueue(roomId, room);
+    callback?.({ ok: true, queue: publicMusicQueue(room) });
+  });
+
+  socket.on('music:play', ({ index } = {}, callback) => {
+    const roomId = socket.data.roomId;
+    const room = roomId && getRoom(roomId);
+    if (!room) return callback?.({ ok: false, error: 'Join a room first.' });
+    const target = Number(index);
+    if (!Number.isInteger(target) || target < 0 || target >= room.musicQueue.length) {
+      return callback?.({ ok: false, error: 'That track is no longer in the queue.' });
+    }
+    playQueuedTrack(roomId, room, target);
+    callback?.({ ok: true });
+  });
+
+  socket.on('music:next', (_payload, callback) => {
+    const roomId = socket.data.roomId;
+    const room = roomId && getRoom(roomId);
+    if (!room) return callback?.({ ok: false, error: 'Join a room first.' });
+    const nextIndex = room.musicIndex + 1;
+    if (!playQueuedTrack(roomId, room, nextIndex)) {
+      return callback?.({ ok: false, error: 'There are no more tracks in the shared queue.' });
+    }
+    callback?.({ ok: true });
   });
 
   socket.on('youtube:load', ({ videoId } = {}) => {

@@ -197,3 +197,13 @@ h1 em { color: var(--rose); font-weight: 600; }
   .region-picker-row { align-items: stretch; flex-direction: column; }
   .region-status { max-width: none; text-align: left; }
 }
+
+/* Shared Music Room queue */
+.shared-music-card { min-height: 360px; }
+.music-now-playing { color: #e7c4c6; font-size: 9px; line-height: 1.45; margin: 9px 0 6px; }
+.music-queue-list { display: flex; flex-direction: column; gap: 4px; max-height: 118px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #62535b transparent; }
+.music-queue-empty { color: #8c8792; font-size: 8px; text-align: center; padding: 11px 5px; border: 1px dashed rgba(255,255,255,.1); border-radius: 7px; }
+.music-queue-item { width: 100%; padding: 8px 9px; border: 1px solid rgba(255,255,255,.06); border-radius: 7px; background: rgba(255,255,255,.025); color: #c9c3cd; text-align: left; font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.music-queue-item.active { color: #b9e0c4; border-color: rgba(139,211,158,.28); background: rgba(82,190,119,.09); }
+.music-next-button { width: 100%; min-height: 32px; margin-top: 8px; border: 1px solid rgba(229,167,169,.25); border-radius: 7px; color: #e9c6c5; background: rgba(229,167,169,.1); font-size: 9px; font-weight: 800; }
+.music-next-button:disabled { opacity: .38; cursor: not-allowed; }
