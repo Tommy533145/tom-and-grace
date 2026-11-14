@@ -8,6 +8,9 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: read
+
 jobs:
   windows:
     runs-on: windows-latest
@@ -16,16 +19,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-      - run: npm install
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
       - name: Run multiplayer smoke tests
         run: npm run test:smoke
-      - name: Build installer
+      - name: Build Windows installer
         run: npm run build:win
-        env:
-          TG_GAME_URL: ${{ vars.TG_GAME_URL }}
       - uses: actions/upload-artifact@v4
         with:
           name: TomAndGrace-Windows-Installer
           path: dist/*.exe
           if-no-files-found: error
+          retention-days: 14
