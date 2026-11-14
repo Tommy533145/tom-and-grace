@@ -1892,50 +1892,26 @@ function extractYoutubeId(value) {
 function renderMusicQueue(state = {}) {
   musicQueue = Array.isArray(state.queue) ? state.queue : [];
   musicIndex = Number.isInteger(state.currentIndex) ? state.currentIndex : -1;
-  const list = $('musicQueueList');
   const current = musicQueue[musicIndex];
   $('musicNowPlaying').textContent = current
-    ? `Now playing · added by ${current.addedBy || 'a player'}`
-    : 'Add a YouTube song to start the room music.';
-  list.replaceChildren();
-  if (!musicQueue.length) {
-    const empty = document.createElement('div');
-    empty.className = 'music-queue-empty';
-    empty.textContent = 'The shared queue is empty.';
-    list.appendChild(empty);
-  }
-  musicQueue.forEach((item, index) => {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = `music-queue-item${index === musicIndex ? ' active' : ''}`;
-    button.textContent = `${index === musicIndex ? '♫ NOW · ' : `${index + 1}. `}YouTube track · ${item.addedBy || 'a player'}`;
-    button.title = 'Play this track for everyone in the room';
-    button.addEventListener('click', () => {
-      socket.emit('music:play', { index }, (response) => {
-        if (!response?.ok) showToast(response?.error || 'Could not play that track.');
-      });
-    });
-    list.appendChild(button);
-  });
-  $('musicNextButton').disabled = musicIndex < 0 || musicIndex >= musicQueue.length - 1;
+    ? 'Shared with everyone in this room. Press play on the video if needed.'
+    : 'Paste a link and press Share.';
 }
 
 function addMusicToQueue() {
   const videoId = extractYoutubeId($('musicInput').value);
   if (!videoId || !/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
-    showToast('Paste a valid YouTube video link or 11-character video ID.');
+    showToast('Please paste a valid YouTube video link.');
     return;
   }
+  const button = $('musicAddButton');
+  button.disabled = true;
   socket.emit('music:queue:add', { videoId }, (response) => {
-    if (!response?.ok) return showToast(response?.error || 'Could not add that track.');
+    button.disabled = false;
+    if (!response?.ok) return showToast(response?.error || 'Could not share this video. Please try again.');
     $('musicInput').value = '';
-    showToast('Added to the shared room queue ♫');
-  });
-}
-
-function playNextMusicTrack() {
-  socket.emit('music:next', {}, (response) => {
-    if (!response?.ok) showToast(response?.error || 'No next track is available.');
+    renderMusicQueue(response.queue || {});
+    showToast('YouTube video shared with everyone in the room ♫');
   });
 }
 
@@ -1943,7 +1919,6 @@ $('musicAddButton').addEventListener('click', addMusicToQueue);
 $('musicInput').addEventListener('keydown', (event) => {
   if (event.key === 'Enter') addMusicToQueue();
 });
-$('musicNextButton').addEventListener('click', playNextMusicTrack);
 
 function showYoutubeTapToPlay(show = true) {
   const button = $('youtubeTapToPlay');
