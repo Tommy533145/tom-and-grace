@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#101116" />
   <meta name="description" content="Tom&Grace — your shared little world." />
-  <title>Tom&Grace 1.3 — Social World Edition</title>
+  <title>Tom&Grace 1.5 — Shared Music Room</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet" />
@@ -18,7 +18,7 @@
   <main id="app">
     <header class="topbar">
       <a class="brand" href="/" aria-label="Tom and Grace home"><span class="brand-mark">T<span>&</span>G</span><span class="brand-name">Tom<span>&</span>Grace</span></a>
-      <div class="topbar-right"><span class="live-dot"></span><span id="topStatus">Your little world awaits</span><span class="top-divider"></span><span class="top-version">SOCIAL WORLD 1.3</span></div>
+      <div class="topbar-right"><span class="live-dot"></span><span id="topStatus">Your little world awaits</span><span class="top-divider"></span><span class="top-version">SOCIAL WORLD 1.5</span></div>
     </header>
 
     <section id="lobby" class="lobby-wrap">
@@ -26,7 +26,7 @@
         <div class="eyebrow"><span class="eyebrow-line"></span> YOUR SHARED PENTHOUSE WORLD</div>
         <h1>Somewhere to<br /><em>be together.</em></h1>
         <p class="lobby-subtitle">Choose your look, explore a luxury rooftop penthouse, chat with everyone in your room, take a car for a drive, and watch something together.</p>
-        <div class="feature-chips"><span>✦ Real 3D penthouse</span><span>⌁ Room chat</span><span>♫ Shared TV & personal music</span></div>
+        <div class="feature-chips"><span>✦ Real 3D penthouse</span><span>⌁ Room chat</span><span>♫ Shared Music Room + personal Spotify</span></div>
       </div>
 
       <section class="setup-card" aria-label="Character selection">
@@ -101,23 +101,26 @@
         </section>
 
         <aside class="media-dock">
-          <section class="media-card tv-card">
-            <div class="media-card-heading"><div class="media-icon tv-icon">▣</div><div><strong>Our TV</strong><small>Pick something to watch</small></div><span class="shared-pill">SHARED</span></div>
-            <div class="tv-screen-wrap"><div id="youtubePlayer" class="youtube-player"></div><div id="tvPlaceholder" class="tv-placeholder"><span class="tv-play">▶</span><strong>What's on tonight?</strong><small>Paste a YouTube link below</small></div></div>
-            <div class="youtube-controls"><input id="youtubeInput" class="media-input" placeholder="YouTube video link or ID" aria-label="YouTube video link" /><button id="youtubeLoad" class="mini-button" type="button">Play</button></div>
-            <div class="media-footnote"><span class="sync-icon">⟳</span> TV controls are shared with everyone in this room</div>
+          <section class="media-card tv-card shared-music-card">
+            <div class="media-card-heading"><div class="media-icon tv-icon">♫</div><div><strong>Shared Music Room</strong><small>One room-wide YouTube queue</small></div><span class="shared-pill">SHARED</span></div>
+            <div class="tv-screen-wrap"><div id="youtubePlayer" class="youtube-player"></div><div id="tvPlaceholder" class="tv-placeholder"><span class="tv-play">▶</span><strong>Choose our first song</strong><small>Everyone in this room follows the same track</small></div></div>
+            <div class="youtube-controls"><input id="musicInput" class="media-input" placeholder="Paste a YouTube song link or ID" aria-label="YouTube song link" /><button id="musicAddButton" class="mini-button" type="button">Add</button></div>
+            <div id="musicNowPlaying" class="music-now-playing" role="status">Add a YouTube song to start the room music.</div>
+            <div id="musicQueueList" class="music-queue-list" aria-label="Shared music queue"><div class="music-queue-empty">The shared queue is empty.</div></div>
+            <button id="musicNextButton" class="music-next-button" type="button" disabled>Play next track</button>
+            <div class="media-footnote"><span class="sync-icon">⟳</span> Queue and playback controls sync for everyone in this room. Autoplay may require one tap per browser.</div>
           </section>
 
           <section class="media-card spotify-card">
-            <div class="media-card-heading"><div class="media-icon spotify-icon">♫</div><div><strong>Our music</strong><small>Spotify web player · personal listening</small></div><span class="private-pill">PERSONAL</span></div>
+            <div class="media-card-heading"><div class="media-icon spotify-icon">♫</div><div><strong>Personal Spotify</strong><small>Listen privately on your own account</small></div><span class="private-pill">PERSONAL</span></div>
             <div class="spotify-direct-setup">
-              <p class="spotify-note">No developer Client ID or dashboard setup. Open Spotify and sign in, search for music, then paste a song, album or playlist link below.</p>
+              <p class="spotify-note">Spotify stays personal. Open Spotify to sign in, search for music, or load an official Spotify embed just for yourself. Spotify playback is not broadcast to the room.</p>
               <button id="spotifyConnect" class="spotify-connect" type="button"><span class="spotify-logo">●</span> Open Spotify & sign in</button>
               <div class="spotify-search-row"><input id="spotifySearch" class="media-input" placeholder="Search Spotify" aria-label="Search Spotify" /><button id="spotifySearchButton" class="mini-button" type="button">Search</button></div>
               <div class="spotify-search-help">Search opens Spotify in a new tab. Copy a result's link and paste it below.</div>
-              <div class="spotify-search-row spotify-link-row"><input id="spotifyLink" class="media-input" placeholder="Paste Spotify track / playlist link" aria-label="Spotify music link" /><button id="spotifyLoad" class="mini-button" type="button">Load</button></div>
-              <div id="spotifyMessage" class="spotify-message" role="status">Sign in on Spotify, then load any Spotify link here.</div>
-              <div id="spotifyEmbedMount" class="spotify-embed-mount"><div class="spotify-embed-placeholder">♫ Your music will appear here</div></div>
+              <div class="spotify-search-row spotify-link-row"><input id="spotifyLink" class="media-input" placeholder="Paste your personal Spotify link" aria-label="Spotify music link" /><button id="spotifyLoad" class="mini-button" type="button">Load</button></div>
+              <div id="spotifyMessage" class="spotify-message" role="status">Your Spotify player is private to you.</div>
+              <div id="spotifyEmbedMount" class="spotify-embed-mount"><div class="spotify-embed-placeholder">♫ Your personal music will appear here</div></div>
               <a id="spotifyOpenLink" class="spotify-open-link hidden" href="https://open.spotify.com/" target="_blank" rel="noopener noreferrer">Open this music in Spotify ↗</a>
             </div>
           </section>
