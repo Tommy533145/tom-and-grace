@@ -1,6 +1,6 @@
-# Tom&Grace — Worldwide-ready Social World Edition 1.4
+# Tom&Grace — Shared Music Room Edition 1.5
 
-A multiplayer 3D social-house prototype built with Three.js, Express and Socket.IO. It is designed as a relaxed hangout world: no quests, tasks, timers or scoring.
+A multiplayer 3D social-house world built with Three.js, Express and Socket.IO. Players share rooms, movement, chat, activities, voice signaling, and a synchronized YouTube music queue, with Spotify available for private listening.
 
 ## What's included
 
@@ -72,15 +72,25 @@ A dependency-free server behavior test is included and can be run with `npm run 
 | Left mouse drag | Rotate the 3D camera |
 | Mouse wheel | Zoom camera in and out |
 
-## Spotify without a Client ID
+## Shared Music Room
 
-1. Press **Open Spotify & sign in**. Spotify opens in a separate browser tab; sign in there.
-2. Use **Search** in Tom&Grace to open Spotify search in a separate tab, or search directly in Spotify.
-3. On Spotify, use Share → Copy link for a track, album, playlist, artist or podcast.
-4. Paste the copied link into the Spotify link field in Tom&Grace and press **Load**.
-5. Use the official embedded Spotify player. If Spotify asks you to sign in again inside the player, follow its prompt or use **Open this music in Spotify**.
+- Add a YouTube video link or 11-character video ID to the **Shared Music Room** queue.
+- Everyone in the same room receives the same queue, current selection, and synchronized playback state.
+- Any room member can add a track, choose a queued track, or play the next track. The queue is limited to 50 items per room.
+- A newly joined player receives the current queue and playback state.
+- YouTube may require each player to tap play once because browser autoplay policies differ. Some videos disable embedded playback and cannot play inside the game.
+- The room queue is held in server memory and resets when the room is empty or the server restarts.
 
-This uses Spotify's official embeds and does not use the Web Playback SDK or Spotify Web API, so no Spotify Developer Client ID is needed. Spotify decides which playback experience is available for the listener, account, content and browser. Some embeds may offer previews or prompt the user to open Spotify. Each player controls their own Spotify embed; this does not synchronize music audio between people. The Spotify embed is an official external player, so its appearance and available controls are provided by Spotify.
+## Personal Spotify (separate from shared music)
+
+1. Press **Open Spotify & sign in** to open Spotify in a separate browser tab.
+2. Use the Spotify search field to open a search in Spotify, or search directly in the Spotify app.
+3. Copy a track, album, playlist, artist or podcast link and paste it into the personal Spotify field.
+4. Press **Load** to use Spotify's official embedded player for your own listening.
+
+This uses Spotify's official embeds and does not use the Web Playback SDK or Spotify Web API, so no Spotify Developer Client ID is needed. Spotify decides which playback experience is available for the listener, account, content and browser. Spotify remains personal: its audio and controls are not broadcast or synchronized to other players. Use the Shared Music Room YouTube queue when everyone should hear the same room music.
+
+
 
 ## Voice chat
 
@@ -129,7 +139,7 @@ The browser game remains the primary cross-platform way to play. Players can joi
 
 ### Windows installer
 - Build on Windows with `npm install` followed by `npm run build:win`.
-- The installer is generated in `dist/` as `TomAndGrace-Setup-1.4.0.exe`.
+- The installer is generated in `dist/` as `TomAndGrace-Setup-1.5.0.exe`.
 - GitHub Actions can build it from **Actions → Build Tom&Grace Windows installer** or when a `v*` release tag is pushed.
 - On first launch, enter the real HTTPS address of the deployed game server. The Windows app saves it securely in the local app-data folder so players do not need to enter it again.
 
@@ -161,3 +171,8 @@ For local development, `http://localhost:3000` is accepted by the desktop launch
 Regional selection is discovery and routing support, not automatic multi-region replication. A region must first be deployed and its real HTTPS URL added to `REGION_DIRECTORY_JSON`. Invite rooms are pinned to their selected server. The current room map is in process memory, so a room exists only on the server instance that created it; players in different regions cannot share the same room until shared room state and a Socket.IO adapter are implemented. User accounts, friends and long-term progress are not yet backed by persistent storage.
 
 The repository still contains `render.yaml` as an optional Render configuration, but Render account billing verification blocked the previous attempt. EthioDeploy is the selected no-card test host. Do not assume a public game URL exists until its deployment completes and its `/health` endpoint has been checked.
+
+
+## Shared Music Room implementation (1.5)
+
+The shared music room uses the synchronized YouTube player rather than relaying Spotify audio. The server owns each room's queue (up to 50 validated YouTube video IDs), current queue index, and playback state. Queue additions, track selection, next-track actions, and queue snapshots are broadcast to all members of the same room. The Spotify embed remains a separate, personal listening option. Shared queues are in-memory and are not persisted across server restarts.
