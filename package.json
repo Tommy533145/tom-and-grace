@@ -1,0 +1,19 @@
+{
+  "name": "tom-and-grace",
+  "version": "1.3.0",
+  "private": true,
+  "description": "A multiplayer 3D social world with penthouse, city, cars, proximity voice, room chat, sleep and dance activities, synchronized YouTube, and Spotify embeds.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test:smoke": "node tests/server-smoke-test.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1"
+  }
+}

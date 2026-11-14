@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#101116" />
+  <meta name="description" content="Tom&Grace — your shared little world." />
+  <title>Tom&Grace 1.3 — Social World Edition</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+
+  <main id="app">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Tom and Grace home"><span class="brand-mark">T<span>&</span>G</span><span class="brand-name">Tom<span>&</span>Grace</span></a>
+      <div class="topbar-right"><span class="live-dot"></span><span id="topStatus">Your little world awaits</span><span class="top-divider"></span><span class="top-version">SOCIAL WORLD 1.3</span></div>
+    </header>
+
+    <section id="lobby" class="lobby-wrap">
+      <div class="lobby-copy">
+        <div class="eyebrow"><span class="eyebrow-line"></span> YOUR SHARED PENTHOUSE WORLD</div>
+        <h1>Somewhere to<br /><em>be together.</em></h1>
+        <p class="lobby-subtitle">Choose your look, explore a luxury rooftop penthouse, chat with everyone in your room, take a car for a drive, and watch something together.</p>
+        <div class="feature-chips"><span>✦ Real 3D penthouse</span><span>⌁ Room chat</span><span>♫ Shared TV & personal music</span></div>
+      </div>
+
+      <section class="setup-card" aria-label="Character selection">
+        <div class="setup-heading"><div><span class="section-kicker">FIRST THINGS FIRST</span><h2>Who are you today?</h2></div><div class="step-count">01 <i>/ 01</i></div></div>
+        <label class="field-label" for="playerName">YOUR NAME</label>
+        <input id="playerName" class="text-field" maxlength="18" placeholder="Enter your name" autocomplete="nickname" />
+        <div class="field-label character-label">CHOOSE YOUR CHARACTER</div>
+        <div class="character-grid" id="characterGrid">
+          <button class="character-option selected" data-character="tom" type="button"><span class="avatar avatar-tom"><i class="hair hair-dark"></i><i class="face"></i><i class="body body-blue"></i></span><span class="character-name">Tom</span><span class="character-caption">The easygoing one</span></button>
+          <button class="character-option" data-character="grace" type="button"><span class="avatar avatar-grace"><i class="hair hair-brown"></i><i class="face"></i><i class="body body-rose"></i></span><span class="character-name">Grace</span><span class="character-caption">The daydreamer</span></button>
+          <button class="character-option" data-character="alex" type="button"><span class="avatar avatar-alex"><i class="hair hair-black"></i><i class="face"></i><i class="body body-green"></i></span><span class="character-name">Alex</span><span class="character-caption">The curious one</span></button>
+          <button class="character-option" data-character="riley" type="button"><span class="avatar avatar-riley"><i class="hair hair-copper"></i><i class="face"></i><i class="body body-lilac"></i></span><span class="character-name">Riley</span><span class="character-caption">The music lover</span></button>
+        </div>
+        <div id="inviteNotice" class="invite-notice hidden"><span>♡</span><div><strong>You've got an invite</strong><small>Choose your character to enter the shared penthouse.</small></div></div>
+        <button id="enterButton" class="primary-button" type="button"><span id="enterButtonText">Create our house</span><span class="button-arrow">↗</span></button>
+        <div class="join-divider"><span></span><small>OR JOIN A PENTHOUSE</small><span></span></div>
+        <div class="join-row"><input id="roomCodeInput" class="text-field code-field" maxlength="12" placeholder="Paste a room code or invite link" /><button id="joinButton" class="secondary-button" type="button">Join <span>→</span></button></div>
+        <p class="setup-footnote"><span class="lock-icon">⌑</span> Private rooms · Up to 8 players · No quests, no pressure</p>
+      </section>
+    </section>
+
+    <section id="game" class="game hidden">
+      <div class="game-topline">
+        <div class="room-identity"><span class="house-icon">⌂</span><div><strong>Our penthouse</strong><small id="roomSubtitle">Your city-view home</small></div></div>
+        <div class="room-actions"><div class="residents" id="residentAvatars"></div><button id="inviteButton" class="invite-button" type="button"><span>＋</span> Invite friends</button><button id="leaveButton" class="icon-button" type="button" aria-label="Leave house" title="Leave house">↗</button></div>
+      </div>
+
+      <div class="world-layout">
+        <section class="world-stage" aria-label="3D house">
+          <div class="world-caption"><span class="world-spark">✦</span><div><strong>EXPLORE THE SOCIAL WORLD</strong><small>Penthouse · Rooftop pool · City promenade · Private garage</small></div></div>
+          <div id="worldCanvas" class="world-canvas"></div>
+          <div class="world-tools">
+            <button id="wardrobeToggle" class="world-tool-button" type="button">✦ Wardrobe</button><button id="activitiesToggle" class="world-tool-button activity-tool" type="button">♡ Activities</button>
+            <button id="driveButton" class="world-tool-button drive-tool" type="button">↗ Enter car (E)</button><button id="elevatorButton" class="world-tool-button elevator-tool" type="button" disabled>↕ Elevator (F)</button>
+          </div>
+          <section id="wardrobePanel" class="wardrobe-panel hidden" aria-label="Character wardrobe">
+            <div class="wardrobe-heading"><div><span class="wardrobe-kicker">YOUR STYLE</span><strong>Wardrobe</strong></div><button id="wardrobeClose" class="wardrobe-close" type="button" aria-label="Close wardrobe">×</button></div>
+            <label for="outfitStyle">OUTFIT STYLE</label>
+            <select id="outfitStyle" class="wardrobe-select"><option value="cozy">Cozy knit</option><option value="streetwear">Streetwear</option><option value="elegant">Elegant</option><option value="sporty">Sporty</option></select>
+            <label for="outfitColor">OUTFIT COLOR</label>
+            <select id="outfitColor" class="wardrobe-select"><option value="cream">Cream</option><option value="rose">Rose</option><option value="midnight">Midnight blue</option><option value="sage">Sage green</option><option value="lavender">Lavender</option><option value="black">Black</option><option value="sky">Sky blue</option><option value="cherry">Cherry red</option></select>
+            <label for="outfitAccessory">ACCESSORY</label>
+            <select id="outfitAccessory" class="wardrobe-select"><option value="none">No accessory</option><option value="beanie">Soft beanie</option><option value="cap">Baseball cap</option><option value="sunglasses">Sunglasses</option></select>
+            <button id="applyOutfit" class="wardrobe-apply" type="button">Wear this outfit</button>
+            <small>Your look is shared with everyone in the penthouse.</small>
+          </section>
+          <section id="activitiesPanel" class="activities-panel hidden" aria-label="Character activities">
+            <div class="wardrobe-heading"><div><span class="wardrobe-kicker">MAKE YOUR MOMENT</span><strong>Activities</strong></div><button id="activitiesClose" class="wardrobe-close" type="button" aria-label="Close activities">×</button></div>
+            <label for="sleepButton">REST</label>
+            <button id="sleepButton" class="activity-action-button" type="button" disabled>Sleep on a nearby bed</button>
+            <label for="danceStyle">DANCE STYLE</label>
+            <select id="danceStyle" class="wardrobe-select">
+              <option value="groove">Easy groove</option>
+              <option value="disco">Disco</option>
+              <option value="salsa">Salsa</option>
+              <option value="bounce">Happy bounce</option>
+              <option value="sway">Slow sway</option>
+            </select>
+            <button id="danceButton" class="activity-action-button dance-action" type="button">Start dancing</button>
+            <button id="stopActivityButton" class="activity-stop-button hidden" type="button">Stop activity</button>
+            <small id="activityHint">Walk close to either bedroom bed to sleep. Everyone in the room can see your activity.</small>
+          </section>
+          <div class="world-hint"><span class="keycap">W</span><span class="keycap">A</span><span class="keycap">S</span><span class="keycap">D</span><small>move / drive</small><span class="keycap">E</span><small>enter / exit car</small><span class="hint-separator"></span><span class="keycap">F</span><small>elevator</small><span class="hint-separator"></span><small>Activities: sleep / dance</small><span class="hint-separator"></span><small>drag to orbit · scroll to zoom</small></div>
+          <div id="worldLoading" class="world-loading"><span class="loading-orbit"></span><span>Opening your house…</span></div>
+        </section>
+
+        <aside class="media-dock">
+          <section class="media-card tv-card">
+            <div class="media-card-heading"><div class="media-icon tv-icon">▣</div><div><strong>Our TV</strong><small>Pick something to watch</small></div><span class="shared-pill">SHARED</span></div>
+            <div class="tv-screen-wrap"><div id="youtubePlayer" class="youtube-player"></div><div id="tvPlaceholder" class="tv-placeholder"><span class="tv-play">▶</span><strong>What's on tonight?</strong><small>Paste a YouTube link below</small></div></div>
+            <div class="youtube-controls"><input id="youtubeInput" class="media-input" placeholder="YouTube video link or ID" aria-label="YouTube video link" /><button id="youtubeLoad" class="mini-button" type="button">Play</button></div>
+            <div class="media-footnote"><span class="sync-icon">⟳</span> TV controls are shared with everyone in this room</div>
+          </section>
+
+          <section class="media-card spotify-card">
+            <div class="media-card-heading"><div class="media-icon spotify-icon">♫</div><div><strong>Our music</strong><small>Spotify web player · personal listening</small></div><span class="private-pill">PERSONAL</span></div>
+            <div class="spotify-direct-setup">
+              <p class="spotify-note">No developer Client ID or dashboard setup. Open Spotify and sign in, search for music, then paste a song, album or playlist link below.</p>
+              <button id="spotifyConnect" class="spotify-connect" type="button"><span class="spotify-logo">●</span> Open Spotify & sign in</button>
+              <div class="spotify-search-row"><input id="spotifySearch" class="media-input" placeholder="Search Spotify" aria-label="Search Spotify" /><button id="spotifySearchButton" class="mini-button" type="button">Search</button></div>
+              <div class="spotify-search-help">Search opens Spotify in a new tab. Copy a result's link and paste it below.</div>
+              <div class="spotify-search-row spotify-link-row"><input id="spotifyLink" class="media-input" placeholder="Paste Spotify track / playlist link" aria-label="Spotify music link" /><button id="spotifyLoad" class="mini-button" type="button">Load</button></div>
+              <div id="spotifyMessage" class="spotify-message" role="status">Sign in on Spotify, then load any Spotify link here.</div>
+              <div id="spotifyEmbedMount" class="spotify-embed-mount"><div class="spotify-embed-placeholder">♫ Your music will appear here</div></div>
+              <a id="spotifyOpenLink" class="spotify-open-link hidden" href="https://open.spotify.com/" target="_blank" rel="noopener noreferrer">Open this music in Spotify ↗</a>
+            </div>
+          </section>
+          <section class="media-card voice-card">
+            <div class="media-card-heading"><div class="media-icon voice-icon">◖</div><div><strong>Nearby voice</strong><small>Talk naturally with people close by</small></div><span id="voiceStatus" class="private-pill">OFF</span></div>
+            <div class="voice-controls"><button id="voiceJoinButton" class="voice-join" type="button">Join voice</button><button id="voiceMuteButton" class="voice-mute" type="button" disabled>Mute mic</button></div>
+            <div id="voiceProximity" class="voice-proximity">Voice is optional. Your microphone only turns on when you join.</div>
+          </section>
+          <section class="media-card chat-card">
+            <div class="media-card-heading"><div class="media-icon chat-icon">☏</div><div><strong>Penthouse chat</strong><small>Talk with everyone in this room</small></div><span id="chatOnlineCount" class="shared-pill">1 HERE</span></div>
+            <div id="chatMessages" class="chat-messages" role="log" aria-live="polite" aria-label="Penthouse chat messages"><div class="chat-empty">Your conversation starts here. Say hello ♡</div></div>
+            <form id="chatForm" class="chat-form">
+              <input id="chatInput" class="media-input" maxlength="400" autocomplete="off" placeholder="Write a message…" aria-label="Chat message" />
+              <button class="chat-send" type="submit" aria-label="Send message">➤</button>
+            </form>
+            <div class="media-footnote">Messages are visible to everyone in this room.</div>
+          </section>
+          <div class="dock-bottom-note"><span>♡</span> No missions. No timers. Just your shared world.</div>
+        </aside>
+      </div>
+      <div id="voiceAudioContainer" aria-hidden="true"></div>
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    </section>
+
+    <footer class="site-footer"><span>Tom&Grace <i>♡</i></span><span>Made for slow evenings and shared moments.</span></footer>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/config.js"></script>
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
