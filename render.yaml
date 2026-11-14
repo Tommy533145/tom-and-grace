@@ -1,9 +1,0 @@
-services:
-  - type: web
-    name: tom-and-grace
-    runtime: node
-    plan: free
-    buildCommand: npm install && node prepare.js
-    startCommand: npm start
-    healthCheckPath: /health
-    autoDeploy: true
