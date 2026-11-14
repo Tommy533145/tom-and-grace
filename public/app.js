@@ -2,6 +2,93 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.m
 
 const $ = (id) => document.getElementById(id);
 const socket = window.io();
+
+const REGION_STORAGE_KEY = 'tg-server-region';
+let regionOptions = [];
+let regionRedirectPending = false;
+
+async function pingRegion(region) {
+  const start = performance.now();
+  try {
+    const response = await fetch(`${region.url}/health?ping=${Date.now()}`, { cache: 'no-store' });
+    if (!response.ok) throw new Error('health check failed');
+    const data = await response.json();
+    if (!data.ok) throw new Error('server not ready');
+    return { ...region, ping: Math.round(performance.now() - start), online: true };
+  } catch (_error) {
+    return { ...region, ping: null, online: false };
+  }
+}
+
+function switchRegion(region) {
+  if (!region?.url || regionRedirectPending) return;
+  const destination = new URL(region.url);
+  const current = new URL(window.location.href);
+  if (destination.origin === current.origin) return;
+  destination.pathname = current.pathname;
+  destination.search = current.search;
+  destination.hash = current.hash;
+  regionRedirectPending = true;
+  window.location.assign(destination.toString());
+}
+
+async function setupRegionPicker() {
+  const picker = $('regionSelect');
+  const status = $('regionStatus');
+  if (!picker || !status) return;
+  try {
+    const response = await fetch('/api/regions', { cache: 'no-store' });
+    if (!response.ok) throw new Error('region directory unavailable');
+    const directory = await response.json();
+    regionOptions = (directory.regions || []).filter((item) => item && item.id && item.name && item.url);
+    picker.innerHTML = '<option value="auto">Automatic (recommended)</option>';
+    for (const region of regionOptions) {
+      const option = document.createElement('option');
+      option.value = region.id;
+      option.textContent = region.name;
+      picker.appendChild(option);
+    }
+    const currentRegion = regionOptions.find((item) => item.id === directory.currentRegion);
+    if (invitedRoom) {
+      picker.value = currentRegion?.id || 'auto';
+      picker.disabled = true;
+      status.textContent = 'Friend invite server';
+      return;
+    }
+    const saved = localStorage.getItem(REGION_STORAGE_KEY) || 'auto';
+    picker.value = saved === 'auto' || regionOptions.some((item) => item.id === saved) ? saved : 'auto';
+    const selected = picker.value === 'auto'
+      ? (await Promise.all(regionOptions.map(pingRegion))).filter((item) => item.online).sort((a, b) => a.ping - b.ping)[0]
+      : await pingRegion(regionOptions.find((item) => item.id === picker.value) || {});
+    if (selected?.online) {
+      status.textContent = `${selected.name} · ${selected.ping} ms`;
+      if (picker.value === 'auto') switchRegion(selected);
+    } else {
+      status.textContent = 'Using available server';
+    }
+  } catch (_error) {
+    status.textContent = 'Global server';
+  }
+  picker.addEventListener('change', async () => {
+    const value = picker.value;
+    localStorage.setItem(REGION_STORAGE_KEY, value);
+    if (value === 'auto') {
+      status.textContent = 'Finding best connection…';
+      const results = await Promise.all(regionOptions.map(pingRegion));
+      const best = results.filter((item) => item.online).sort((a, b) => a.ping - b.ping)[0];
+      if (best) switchRegion(best);
+      else status.textContent = 'No server responded';
+      return;
+    }
+    const region = regionOptions.find((item) => item.id === value);
+    if (!region) return;
+    status.textContent = 'Checking server…';
+    const result = await pingRegion(region);
+    if (result.online) switchRegion(region);
+    else status.textContent = 'Server unavailable';
+  });
+}
+
 const params = new URLSearchParams(window.location.search);
 const invitedRoom = (params.get('room') || '').toUpperCase();
 let selectedCharacter = 'tom';
@@ -80,6 +167,7 @@ document.querySelectorAll('.character-option').forEach((button) => {
   button.addEventListener('click', () => selectCharacter(button.dataset.character));
 });
 setLobbyMode();
+setupRegionPicker();
 
 function extractRoomCode(value) {
   const raw = String(value || '').trim();

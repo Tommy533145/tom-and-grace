@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Connect to Tom&Grace</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at top,#292333,#101116 65%);color:#f8f4f0;font:16px/1.5 Segoe UI,Arial,sans-serif}.panel{width:min(440px,calc(100% - 36px));padding:34px;border:1px solid #ffffff20;border-radius:22px;background:#17171fe8;box-shadow:0 24px 80px #0008}h1{margin:0 0 8px;font-size:30px;letter-spacing:-1px}p{color:#c4becb;margin:0 0 22px}.heart{color:#f08ba8}label{display:block;margin:0 0 8px;font-size:13px;color:#e5dce4}input{width:100%;padding:14px;border-radius:12px;border:1px solid #ffffff30;background:#0e0e14;color:#fff;font-size:15px;outline:none}input:focus{border-color:#e89bb6}button{width:100%;margin-top:14px;padding:14px;border:0;border-radius:12px;background:linear-gradient(110deg,#d9789b,#9d83cb);color:#fff;font-weight:700;font-size:15px;cursor:pointer}button:disabled{opacity:.6;cursor:wait}.hint{font-size:12px;margin-top:14px;color:#aaa3b1}.error{min-height:22px;margin-top:10px;color:#ff9eaa;font-size:13px}
+  </style>
+</head>
+<body>
+  <main class="panel">
+    <h1>Tom<span class="heart">&</span>Grace</h1>
+    <p>Your shared world is one connection away. Enter the secure game server address to continue.</p>
+    <form id="connect-form">
+      <label for="server-url">Game server URL</label>
+      <input id="server-url" type="url" placeholder="https://your-game.onrender.com" autocomplete="url" required>
+      <button id="connect-button" type="submit">Connect to my world</button>
+      <div class="error" id="error" role="alert"></div>
+    </form>
+    <div class="hint">Use an HTTPS address. Your server address is saved on this PC for next time.</div>
+  </main>
+  <script>
+    const form=document.getElementById('connect-form');
+    const input=document.getElementById('server-url');
+    const button=document.getElementById('connect-button');
+    const error=document.getElementById('error');
+    form.addEventListener('submit',async(event)=>{
+      event.preventDefault();error.textContent='';button.disabled=true;button.textContent='Connecting…';
+      try{await window.tomGraceDesktop.connect(input.value);}
+      catch(e){error.textContent=e.message||'Could not connect. Check the address and try again.';button.disabled=false;button.textContent='Connect to my world';}
+    });
+  </script>
+</body>
+</html>
