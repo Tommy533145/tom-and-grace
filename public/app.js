@@ -93,12 +93,7 @@ const params = new URLSearchParams(window.location.search);
 const invitedRoom = (params.get('room') || '').toUpperCase();
 let selectedCharacter = 'tom';
 const ROOM_TYPES = {
-  penthouse: { name: 'Penthouse', subtitle: 'City views · Rooftop · Garage', greeting: 'Welcome to the penthouse' },
-  music: { name: 'Music Lounge', subtitle: 'Your shared music hangout', greeting: 'Welcome to the Music Lounge' },
-  cozy: { name: 'Cozy Retreat', subtitle: 'A relaxed space to unwind', greeting: 'Welcome to the Cozy Retreat' },
-  game: { name: 'Game Night', subtitle: 'A place to meet and play', greeting: 'Welcome to Game Night' },
-  garden: { name: 'Garden Villa', subtitle: 'Greenery · Garden terrace · Relaxing', greeting: 'Welcome to the Garden Villa' },
-  cinema: { name: 'Cinema Room', subtitle: 'Movie nights · Big screen · Lounge', greeting: 'Welcome to the Cinema Room' }
+  penthouse: { name: 'Penthouse', subtitle: 'City views · Rooftop · Garage · Mini Mart', greeting: 'Welcome to the penthouse' }
 };
 let selectedRoomType = 'penthouse';
 let activeRoomType = 'penthouse';
@@ -169,21 +164,6 @@ function setLobbyMode() {
   $('topStatus').textContent = invitedRoom ? 'You have a penthouse invitation' : 'Your little world awaits';
 }
 
-function selectRoomType(type) {
-  if (!ROOM_TYPES[type] || invitedRoom) return;
-  selectedRoomType = type;
-  $('enterButtonText').textContent = 'Create ' + ROOM_TYPES[type].name;
-  document.querySelectorAll('.room-choice').forEach((button) => {
-    const selected = button.dataset.roomType === type;
-    button.classList.toggle('selected', selected);
-    button.setAttribute('aria-pressed', String(selected));
-  });
-}
-
-document.querySelectorAll('.room-choice').forEach((button) => {
-  button.addEventListener('click', () => selectRoomType(button.dataset.roomType));
-});
-
 function selectCharacter(character) {
   if (!CHARACTER_INFO[character]) return;
   selectedCharacter = character;
@@ -216,7 +196,7 @@ function enterRoom(response) {
     return;
   }
   activeRoomId = response.roomId;
-  activeRoomType = ROOM_TYPES[response.roomType] ? response.roomType : 'penthouse';
+  activeRoomType = 'penthouse';
   selfId = response.selfId || socket.id;
   players = response.players || [];
   vehicles = response.vehicles || [];
@@ -248,7 +228,7 @@ function enterRoom(response) {
 }
 
 function createHouse() {
-  socket.emit('room:create', { profile: getProfile(), roomType: selectedRoomType }, (response) => enterRoom(response));
+  socket.emit('room:create', { profile: getProfile(), roomType: 'penthouse' }, (response) => enterRoom(response));
 }
 
 function joinHouse(roomId) {
