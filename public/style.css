@@ -294,3 +294,11 @@ h1 em { color: var(--rose); font-weight: 600; }
 .mall-tool.mall-nearby { color: #f2ffd9; border-color: rgba(184,231,197,.9); background: rgba(83,142,93,.28); box-shadow: 0 0 18px rgba(111,190,120,.24); }
 .mall-heading strong { color: #e6f3dc; }
 .mall-bag { color:#d7e7d2; font-size:9px; line-height:1.5; padding:8px 9px; border-radius:8px; background:rgba(135,177,124,.1); margin-top:8px; }
+
+/* Saved YouTube playlists */
+.playlist-save-row,.playlist-library-row { display:flex; gap:7px; margin-top:7px; }
+.playlist-library-row select { color-scheme:dark; }
+.saved-playlist-list { display:flex; flex-wrap:wrap; gap:5px; margin-top:7px; max-height:64px; overflow:auto; }
+.saved-playlist-item { display:flex; align-items:center; gap:6px; max-width:100%; padding:4px 7px; border:1px solid rgba(229,167,169,.18); border-radius:6px; color:#d8cbd0; background:rgba(255,255,255,.035); font-size:8px; }
+.saved-playlist-item span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.saved-playlist-delete { border:0; background:transparent; color:#e6a6a8; font-size:14px; line-height:1; padding:0 2px; }
