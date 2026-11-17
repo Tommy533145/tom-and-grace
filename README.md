@@ -102,7 +102,7 @@ EthioDeploy is the selected alternative for the first hosted test. Its published
 
 1. Open [EthioDeploy](https://ethiodeploy.com/) and sign in with GitHub.
 2. Install its GitHub App and grant access only to the `Tommy533145/tom-and-grace` repository.
-3. Choose **New Project** and select this repository. The Free plan does not include branch previews, so it deploys the repository's default branch. The worldwide Windows-client changes are merged on `main`. The Shared Music Room 1.5 changes are proposed in pull request #2; the hosted free service will not receive them until that pull request is merged and the deployment completes. Do not expect the live site to show the new music interface before then.
+3. Choose **New Project** and select this repository. The Free plan does not include branch previews, so it deploys the repository's default branch. The worldwide Windows-client and Shared Music Room 1.5 changes are on `main`. EthioDeploy deploys new commits from the default branch automatically after the build and health check pass. Verify the latest deployment in the EthioDeploy dashboard before sharing the live URL; a successful GitHub build does not itself prove the hosted game has updated.
 4. Confirm the detected Node.js service uses `npm install` and `npm start`. The app already reads `process.env.PORT`, binds to `0.0.0.0`, and exposes `/health`.
 5. Wait for the health check to pass, then open the generated HTTPS `.ethiodeploy.app` URL and verify `/health` returns JSON with `"ok": true`.
 6. Use that real URL in the Windows launcher on first launch. Share browser invite links only after the URL has been tested.
