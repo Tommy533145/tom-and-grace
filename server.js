@@ -95,12 +95,7 @@ function publicPlayers(room) {
 }
 
 function publicVehicles(room) {
-  return Array.from(room.vehicles.values()).map((v) => ({
-    id: v.id,
-    position: v.position,
-    rotationY: v.rotationY,
-    driverId: v.driverId || null
-  }));
+  return Array.from(room.vehicles.values()).map((v) => ({id:v.id,zone:v.zone||'penthouse',bodyColor:v.bodyColor||null,position:v.position,rotationY:v.rotationY,driverId:v.driverId||null}));
 }
 
 function projectedYoutubeState(state) {
@@ -131,8 +126,11 @@ function playQueuedTrack(roomId, room, index) {
 
 function createVehicles() {
   return new Map([
-    ['sunset-coupe', { id: 'sunset-coupe', position: { x: 13.3, z: 4.8 }, rotationY: 0, driverId: null }],
-    ['midnight-suv', { id: 'midnight-suv', position: { x: 18.2, z: -3.6 }, rotationY: Math.PI, driverId: null }]
+    ['sunset-coupe',{id:'sunset-coupe',zone:'penthouse',bodyColor:0xb96f5d,position:{x:13.3,z:4.8},rotationY:0,driverId:null}],
+    ['midnight-suv',{id:'midnight-suv',zone:'penthouse',bodyColor:0x283847,position:{x:18.2,z:-3.6},rotationY:Math.PI,driverId:null}],
+    ['city-sport',{id:'city-sport',zone:'city',bodyColor:0x376f9b,position:{x:39,z:-1.55},rotationY:Math.PI/2,driverId:null}],
+    ['city-sedan',{id:'city-sedan',zone:'city',bodyColor:0x9a9b9e,position:{x:59,z:1.55},rotationY:-Math.PI/2,driverId:null}],
+    ['city-suv',{id:'city-suv',zone:'city',bodyColor:0x647d5e,position:{x:79,z:-1.55},rotationY:Math.PI/2,driverId:null}]
   ]);
 }
 
@@ -406,6 +404,7 @@ io.on('connection', (socket) => {
     const vehicle = room?.vehicles.get(String(vehicleId || ''));
     if (!room || !player) return callback?.({ ok: false, error: 'Join a penthouse first.' });
     if (!vehicle) return callback?.({ ok: false, error: 'That car is not available.' });
+    if((vehicle.zone||'penthouse')!==(player.zone||'penthouse'))return callback?.({ok:false,error:'That car is in the other district.'});
     if (player.vehicleId) return callback?.({ ok: false, error: 'You are already driving.' });
     if (vehicle.driverId && vehicle.driverId !== socket.id) return callback?.({ ok: false, error: 'Someone is already driving this car.' });
     const distance = Math.hypot(player.position.x - vehicle.position.x, player.position.z - vehicle.position.z);
@@ -428,10 +427,7 @@ io.on('connection', (socket) => {
     const vehicle = player?.vehicleId ? room?.vehicles.get(player.vehicleId) : null;
     if (!room || !player || !vehicle) return callback?.({ ok: false, error: 'You are not in a car.' });
     const yaw = vehicle.rotationY || 0;
-    player.position = {
-      x: Math.max(9.7, Math.min(20.8, vehicle.position.x + Math.cos(yaw) * 1.9)),
-      z: Math.max(-7.8, Math.min(7.8, vehicle.position.z + Math.sin(yaw) * 1.9))
-    };
+    player.position = vehicle.zone === 'city' ? {x:Math.max(29,Math.min(88,vehicle.position.x+Math.cos(yaw)*1.9)),z:Math.max(-4.8,Math.min(4.8,vehicle.position.z+Math.sin(yaw)*1.9))} : {x:Math.max(9.7,Math.min(20.8,vehicle.position.x+Math.cos(yaw)*1.9)),z:Math.max(-7.8,Math.min(7.8,vehicle.position.z+Math.sin(yaw)*1.9))};
     player.rotationY = yaw;
     player.vehicleId = null;
     player.moving = false;
@@ -453,7 +449,7 @@ io.on('connection', (socket) => {
     const z = Number(position.z);
     const yaw = Number(rotationY);
     if (!Number.isFinite(x) || !Number.isFinite(z) || !Number.isFinite(yaw)) return;
-    vehicle.position = { x: Math.max(10.05, Math.min(21.0, x)), z: Math.max(-7.7, Math.min(7.7, z)) };
+    vehicle.position = vehicle.zone === 'city' ? {x:Math.max(30,Math.min(87,x)),z:Math.max(-2.55,Math.min(2.55,z))} : {x:Math.max(10.05,Math.min(21.0,x)),z:Math.max(-7.7,Math.min(7.7,z))};
     vehicle.rotationY = Math.max(-Math.PI * 8, Math.min(Math.PI * 8, yaw));
     socket.to(roomId).emit('vehicle:move', {
       vehicleId: vehicle.id,
