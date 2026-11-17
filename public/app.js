@@ -121,6 +121,8 @@ let lastVehicleSentAt = 0;
 let lastVehicleSentPosition = { x: 0, z: 0 };
 let currentOutfit = { color: 'sky', style: 'cozy', accessory: 'none' };
 let currentZone = 'penthouse';
+let activeWeatherKind=(()=>{try{return localStorage.getItem('tg-player-weather')||'clear';}catch(_error){return 'clear';}})();
+let cityMission={active:false,collected:0,pickups:[]};
 let voiceJoined = false;
 let voiceMuted = true;
 let localVoiceStream = null;
@@ -827,7 +829,7 @@ function createCarMesh(vehicle) {
   root.position.set(vehicle.position.x, 0, vehicle.position.z);
   root.rotation.y = vehicle.rotationY || 0;
   const isCoupe = vehicle.id === 'sunset-coupe';
-  const bodyColor = isCoupe ? 0xb96f5d : 0x283847;
+  const bodyColor = vehicle.bodyColor || (isCoupe ? 0xb96f5d : 0x283847);
   const trim = 0x171c23;
   const carWidth = isCoupe ? 1.55 : 1.72;
   const carLength = isCoupe ? 3.05 : 3.32;
@@ -1420,10 +1422,31 @@ function createHouseScene(scene, colliders) {
 
 const WEATHER_PRESETS={clear:{sky:0x8db9d5,fog:0xb8d0dc,near:90,far:190,sun:0xffe4bf,power:2.4,hemi:1.55,exposure:1.18,n:0},sunset:{sky:0xd68f78,fog:0xe4b09b,near:65,far:165,sun:0xffa36e,power:1.55,hemi:1.05,exposure:1.28,n:0},night:{sky:0x101a30,fog:0x26334b,near:48,far:135,sun:0x8da9e8,power:.32,hemi:.42,exposure:.82,n:0},rain:{sky:0x526477,fog:0x71808c,near:30,far:105,sun:0x9aacc2,power:.48,hemi:.7,exposure:.9,n:520},storm:{sky:0x303b50,fog:0x4b5668,near:24,far:90,sun:0x7c8ba7,power:.22,hemi:.38,exposure:.78,n:720},snow:{sky:0xa8bdca,fog:0xd0dce1,near:38,far:125,sun:0xd7e8f5,power:.82,hemi:1.05,exposure:1.02,n:380},fog:{sky:0x89949b,fog:0xc0c7c9,near:12,far:62,sun:0xc5cbd0,power:.58,hemi:.8,exposure:.92,n:0}};
 function clearWeatherParticles(){if(!world?.weather)return;world.scene.remove(world.weather.points);world.weather.points.geometry.dispose();world.weather.points.material.dispose();world.weather=null;}
-function applyWeather(kind,announce=false){if(!world)return;const p=WEATHER_PRESETS[kind]||WEATHER_PRESETS.clear;clearWeatherParticles();world.weatherKind=kind;world.scene.background.setHex(p.sky);world.scene.fog.color.setHex(p.fog);world.scene.fog.near=p.near;world.scene.fog.far=p.far;world.renderer.toneMappingExposure=p.exposure;world.sunLight.color.setHex(p.sun);world.sunLight.intensity=p.power;world.hemiLight.intensity=p.hemi;world.backGlow.intensity=kind==='night'?1:kind==='storm'?.35:.8;world.frontGlow.intensity=kind==='night'?.72:.5;const select=$('weatherSelect');if(select&&select.value!==kind)select.value=kind;
+function applyWeather(kind,announce=false){const p=WEATHER_PRESETS[kind]||WEATHER_PRESETS.clear;activeWeatherKind=kind;try{localStorage.setItem('tg-player-weather',kind);}catch(_error){}const select=$('weatherSelect');if(select&&select.value!==kind)select.value=kind;if(!world)return;clearWeatherParticles();world.weatherKind=kind;world.scene.background=new THREE.Color(p.sky);if(world.scene.fog){world.scene.fog.color.setHex(p.fog);world.scene.fog.near=p.near;world.scene.fog.far=p.far;}else world.scene.fog=new THREE.Fog(p.fog,p.near,p.far);world.renderer.toneMappingExposure=p.exposure;world.sunLight.color.setHex(p.sun);world.sunLight.intensity=p.power;world.hemiLight.intensity=p.hemi;world.backGlow.intensity=kind==='night'?1:kind==='storm'?.35:.8;world.frontGlow.intensity=kind==='night'?.72:.5;world.container.dataset.weather=kind;
 if(p.n){const count=p.n,positions=new Float32Array(count*3),velocities=new Float32Array(count*3);for(let i=0;i<count;i++){positions[i*3]=(Math.random()-.5)*75;positions[i*3+1]=Math.random()*28;positions[i*3+2]=(Math.random()-.5)*65;velocities[i*3]=(Math.random()-.5)*(kind==='snow'?.65:.22);velocities[i*3+1]=kind==='snow'?.8+Math.random()*1.2:13+Math.random()*8;velocities[i*3+2]=(Math.random()-.5)*(kind==='snow'?.65:.22);}const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));const material=new THREE.PointsMaterial({color:kind==='snow'?0xf4f8ff:0xc8d9e8,size:kind==='snow'?.13:.055,transparent:true,opacity:kind==='snow'?.88:.62,depthWrite:false});const points=new THREE.Points(geometry,material);points.frustumCulled=false;world.scene.add(points);world.weather={points,positions,velocities,count,kind};}
 if(announce){const names={clear:'Clear day',sunset:'Golden sunset',night:'Night',rain:'Rain',storm:'Thunderstorm',snow:'Snow',fog:'Fog'};showToast('Weather changed: '+names[kind]);}}
 function updateWeather(delta,now){const w=world?.weather;if(!w)return;const center=world.cameraTarget;for(let i=0;i<w.count;i++){const j=i*3;w.positions[j]+=w.velocities[j]*delta;w.positions[j+1]-=w.velocities[j+1]*delta;w.positions[j+2]+=w.velocities[j+2]*delta;if(w.positions[j+1]<0){w.positions[j]=center.x+(Math.random()-.5)*70;w.positions[j+1]=18+Math.random()*12;w.positions[j+2]=center.z+(Math.random()-.5)*60;}if(w.kind==='snow')w.positions[j]+=Math.sin(now*.0005+i)*delta*.18;}w.points.geometry.attributes.position.needsUpdate=true;if(w.kind==='storm'&&Math.random()<.0015){world.sunLight.intensity=2.2;world.lightningUntil=now+100;}if(world.lightningUntil&&now>world.lightningUntil){world.sunLight.intensity=WEATHER_PRESETS.storm.power;world.lightningUntil=0;}}
+
+
+function createCityPedestrian(scene,index,x,z,direction){
+ const npc=new THREE.Group();npc.position.set(x,0,z);npc.rotation.y=direction>0?Math.PI/2:-Math.PI/2;
+ const skin=new THREE.MeshStandardMaterial({color:[0xc58f70,0xe0b493,0x9c6d55,0xd7a27e][index%4],roughness:.82});
+ const clothes=new THREE.MeshStandardMaterial({color:[0x496c88,0x8a5862,0x657b62,0x76678f][index%4],roughness:.75});
+ const body=new THREE.Mesh(new THREE.CapsuleGeometry(.22,.48,4,8),clothes);body.position.y=.78;body.castShadow=true;npc.add(body);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.17,12,10),skin);head.position.y=1.25;head.castShadow=true;npc.add(head);
+ const legs=[];for(const side of [-1,1]){const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.075,.36,3,6),new THREE.MeshStandardMaterial({color:0x303744}));leg.position.set(side*.11,.3,0);npc.add(leg);legs.push(leg);}
+ npc.userData={phase:index*1.7,direction,speed:.55+(index%3)*.12,legs};scene.add(npc);return npc;
+}
+function createCityTraffic(scene){
+ const cars=[];for(let i=0;i<4;i++){const speed=i%2?-(3.1+i*.18):(3+i*.16);const root=createCarMesh({id:'traffic-'+i,position:{x:34+i*14,z:i%2?-1.55:1.55},rotationY:speed>0?Math.PI/2:-Math.PI/2,bodyColor:[0x376f9b,0x9a9b9e,0x647d5e,0x9b6658][i]});root.userData.trafficSpeed=speed;root.userData.trafficMin=30;root.userData.trafficMax=87;root.userData.trafficLane=i%2?-1.55:1.55;root.position.z=root.userData.trafficLane;scene.add(root);cars.push(root);}return cars;
+}
+function createCityMissionPickups(scene){
+ return [[42,-5.5],[62,5.5],[81,-5.5]].map(([x,z],i)=>{const group=new THREE.Group();group.position.set(x,0,z);const crate=new THREE.Mesh(new THREE.BoxGeometry(.72,.58,.72),new THREE.MeshStandardMaterial({color:0xd6a35e,roughness:.7}));crate.position.y=.32;crate.castShadow=true;group.add(crate);const ring=new THREE.Mesh(new THREE.TorusGeometry(.62,.045,8,24),new THREE.MeshBasicMaterial({color:0xffd98a}));ring.rotation.x=Math.PI/2;ring.position.y=.12;group.add(ring);const light=new THREE.PointLight(0xffc76b,.55,3);light.position.y=1.1;group.add(light);group.userData.pickupIndex=i;group.visible=false;scene.add(group);return group;});
+}
+function startCityMission(){if(currentZone!=='city')return showToast('Take the elevator to the city to start a delivery mission.');cityMission.active=true;cityMission.collected=0;cityMission.pickups=world?.cityMissionPickups||[];cityMission.pickups.forEach(p=>{p.visible=true;p.position.y=0;});updateCityMissionHud();showToast('City delivery started: collect all 3 glowing packages.');}
+function updateCityMissionHud(){const button=$('cityMissionButton'),status=$('cityMissionStatus');if(button)button.textContent=cityMission.active?'Mission in progress':'Start city delivery';if(status)status.textContent=cityMission.active?cityMission.collected+'/3 packages':(cityMission.collected===3?'Completed':'3 packages · City');}
+function updateCityMission(){if(!cityMission.active||currentZone!=='city'||!world)return;const local=world.playerObjects.get(selfId);if(!local)return;cityMission.pickups.forEach(p=>{if(!p.visible)return;p.rotation.y+=.018;p.position.y=.12+Math.sin(performance.now()*.003+p.userData.pickupIndex)*.08;if(Math.hypot(local.position.x-p.position.x,local.position.z-p.position.z)<1.55){p.visible=false;cityMission.collected++;updateCityMissionHud();if(cityMission.collected>=3){cityMission.active=false;showToast('Delivery complete! You collected all 3 packages.');}else showToast('Package collected · '+cityMission.collected+'/3');}});}
+function updateCityAmbient(delta,now){if(!world||currentZone!=='city')return;world.trafficCars?.forEach(car=>{car.position.x+=car.userData.trafficSpeed*delta;if(car.position.x>car.userData.trafficMax)car.position.x=car.userData.trafficMin;if(car.position.x<car.userData.trafficMin)car.position.x=car.userData.trafficMax;car.userData.wheels?.forEach(w=>{w.rotation.x+=Math.sign(car.userData.trafficSpeed)*delta*5;});});world.cityPedestrians?.forEach(npc=>{npc.position.x+=npc.userData.direction*npc.userData.speed*delta;if(npc.position.x>86)npc.userData.direction=-1;if(npc.position.x<34)npc.userData.direction=1;npc.rotation.y=npc.userData.direction>0?Math.PI/2:-Math.PI/2;npc.userData.legs.forEach((leg,i)=>{leg.rotation.x=Math.sin(now*.006+npc.userData.phase+i*Math.PI)*.45;});npc.position.y=Math.abs(Math.sin(now*.006+npc.userData.phase))*.035;});}
 
 function initializeWorld() {
   const container = $('worldCanvas');
@@ -1477,9 +1500,15 @@ function initializeWorld() {
   const vehicleObjects = new Map();
   const cameraTarget = new THREE.Vector3(5.2, .55, 0);
   const cameraSpherical = new THREE.Spherical().setFromVector3(camera.position.clone().sub(cameraTarget));
-  world = { scene, camera, renderer, playerObjects, vehicleObjects, container, colliders, cameraTarget, cameraSpherical, sunLight: sun, hemiLight: hemi, backGlow, frontGlow, lastFrame: performance.now(), localMoving: false, weather: null, weatherKind: 'clear' };
-  applyWeather($('weatherSelect')?.value || 'clear');
-  $('weatherSelect')?.addEventListener('change', (event) => applyWeather(event.target.value, true));
+  world = { scene, camera, renderer, playerObjects, vehicleObjects, container, colliders, cameraTarget, cameraSpherical, sunLight: sun, hemiLight: hemi, backGlow, frontGlow, lastFrame: performance.now(), localMoving: false, weather: null, weatherKind: 'clear', trafficCars: [], cityPedestrians: [], cityMissionPickups: [] };
+  world.trafficCars=createCityTraffic(scene);
+  world.cityPedestrians=Array.from({length:9},(_,i)=>createCityPedestrian(scene,i,37+i*5.8,i%2?-5.5:5.5,i%2?1:-1));
+  world.cityMissionPickups=createCityMissionPickups(scene);
+  $('cityMissionButton')?.addEventListener('click',startCityMission);
+  updateCityMissionHud();
+  const weatherSelect=$('weatherSelect');
+  if(weatherSelect){weatherSelect.value=activeWeatherKind;weatherSelect.onchange=()=>{try{applyWeather(weatherSelect.value,true);}catch(error){console.error('Weather change failed',error);showToast('Weather could not load. Please try another setting.');}};}
+  applyWeather(activeWeatherKind);
   let orbitPointer = null;
   renderer.domElement.addEventListener('pointerdown', (event) => {
     if (event.button !== 0) return;
@@ -1692,8 +1721,7 @@ function animateWorld() {
         const speed = throttle > 0 ? 6.1 : 3.1;
         car.position.x += Math.sin(car.rotation.y) * speed * throttle * delta;
         car.position.z += Math.cos(car.rotation.y) * speed * throttle * delta;
-        car.position.x = THREE.MathUtils.clamp(car.position.x, 10.15, 20.95);
-        car.position.z = THREE.MathUtils.clamp(car.position.z, -7.55, 7.55);
+        if(currentZone==='city'){car.position.x=THREE.MathUtils.clamp(car.position.x,30,87);car.position.z=THREE.MathUtils.clamp(car.position.z,-2.55,2.55);}else{car.position.x=THREE.MathUtils.clamp(car.position.x,10.15,20.95);car.position.z=THREE.MathUtils.clamp(car.position.z,-7.55,7.55);}
         car.userData.wheels?.forEach((wheel) => { wheel.rotation.x -= throttle * delta * 8; });
       }
       const moved = Math.abs(car.position.x - beforeX) > .0001 || Math.abs(car.position.z - beforeZ) > .0001;
@@ -1753,6 +1781,8 @@ function animateWorld() {
   }
 
   updateWeather(delta, now);
+  updateCityAmbient(delta,now);
+  updateCityMission();
   world.playerObjects.forEach((object, id) => {
     if (id !== selfId && object.userData.targetPosition) {
       object.position.lerp(object.userData.targetPosition, Math.min(1, delta * 12));
