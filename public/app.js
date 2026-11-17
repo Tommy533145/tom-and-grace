@@ -1538,19 +1538,41 @@ function updateCityMissionHud(){const button=$('cityMissionButton'),status=$('ci
 function updateCityMission(){if(!cityMission.active||currentZone!=='city'||!world)return;const local=world.playerObjects.get(selfId);if(!local)return;cityMission.pickups.forEach(p=>{if(!p.visible)return;p.rotation.y+=.018;p.position.y=.12+Math.sin(performance.now()*.003+p.userData.pickupIndex)*.08;if(Math.hypot(local.position.x-p.position.x,local.position.z-p.position.z)<1.55){p.visible=false;cityMission.collected++;updateCityMissionHud();if(cityMission.collected>=3){cityMission.active=false;showToast('Delivery complete! You collected all 3 packages.');}else showToast('Package collected · '+cityMission.collected+'/3');}});}
 function updateCityAmbient(delta,now){if(!world||currentZone!=='city')return;world.trafficCars?.forEach(car=>{car.position.x+=car.userData.trafficSpeed*delta;if(car.position.x>car.userData.trafficMax)car.position.x=car.userData.trafficMin;if(car.position.x<car.userData.trafficMin)car.position.x=car.userData.trafficMax;car.userData.wheels?.forEach(w=>{w.rotation.x+=Math.sign(car.userData.trafficSpeed)*delta*5;});});world.cityPedestrians?.forEach(npc=>{npc.position.x+=npc.userData.direction*npc.userData.speed*delta;if(npc.position.x>86)npc.userData.direction=-1;if(npc.position.x<34)npc.userData.direction=1;npc.rotation.y=npc.userData.direction>0?Math.PI/2:-Math.PI/2;npc.userData.legs.forEach((leg,i)=>{leg.rotation.x=Math.sin(now*.006+npc.userData.phase+i*Math.PI)*.45;});npc.position.y=Math.abs(Math.sin(now*.006+npc.userData.phase))*.035;});}
 
+// Pick a conservative renderer profile so the same 3D client remains usable
+// on integrated-GPU laptops and lower-end Windows PCs.
+function getWorldRenderProfile() {
+  const memory = Number(navigator.deviceMemory || 4);
+  const cores = Number(navigator.hardwareConcurrency || 4);
+  const compactScreen = Math.min(window.innerWidth || 1280, window.innerHeight || 720) < 700;
+  const lowPower = memory <= 4 || cores <= 4 || compactScreen;
+  return {
+    lowPower,
+    pixelRatio: Math.min(window.devicePixelRatio || 1, lowPower ? 1.0 : 1.35),
+    antialias: !lowPower,
+    shadows: !lowPower,
+    shadowMapSize: lowPower ? 512 : 1024,
+    maxFps: lowPower ? 30 : 60
+  };
+}
+
 function initializeWorld() {
   const container = $('worldCanvas');
   if (world) return;
+  const renderProfile = getWorldRenderProfile();
   const width = container.clientWidth || 900;
   const height = container.clientHeight || 600;
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(39, width / height, .1, 240);
   camera.position.set(5.0, 24.5, 29.5);
   camera.lookAt(5.2, 0.55, 0);
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.7));
+  const renderer = new THREE.WebGLRenderer({
+    antialias: renderProfile.antialias,
+    alpha: false,
+    powerPreference: 'low-power'
+  });
+  renderer.setPixelRatio(renderProfile.pixelRatio);
   renderer.setSize(width, height);
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = renderProfile.shadows;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -1562,7 +1584,7 @@ function initializeWorld() {
   const sun = new THREE.DirectionalLight(0xffddc2, 2.1);
   sun.position.set(-3, 7, 5);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.mapSize.set(renderProfile.shadowMapSize, renderProfile.shadowMapSize);
   sun.shadow.camera.left = -12; sun.shadow.camera.right = 12; sun.shadow.camera.top = 12; sun.shadow.camera.bottom = -12;
   scene.add(sun);
   const backGlow = new THREE.PointLight(0xd98d91, .8, 9);
@@ -1590,7 +1612,7 @@ function initializeWorld() {
   const vehicleObjects = new Map();
   const cameraTarget = new THREE.Vector3(5.2, .55, 0);
   const cameraSpherical = new THREE.Spherical().setFromVector3(camera.position.clone().sub(cameraTarget));
-  world = { scene, camera, renderer, playerObjects, vehicleObjects, container, colliders, cameraTarget, cameraSpherical, sunLight: sun, hemiLight: hemi, backGlow, frontGlow, lastFrame: performance.now(), localMoving: false, weather: null, weatherKind: 'clear', trafficCars: [], cityPedestrians: [], cityMissionPickups: [] };
+  world = { scene, camera, renderer, playerObjects, vehicleObjects, container, colliders, cameraTarget, cameraSpherical, sunLight: sun, hemiLight: hemi, backGlow, frontGlow, lastFrame: performance.now(), lastRenderAt: 0, renderProfile, localMoving: false, weather: null, weatherKind: 'clear', trafficCars: [], cityPedestrians: [], cityMissionPickups: [] };
   world.trafficCars=createCityTraffic(scene);
   world.cityPedestrians=Array.from({length:9},(_,i)=>createCityPedestrian(scene,i,37+i*5.8,i%2?-5.5:5.5,i%2?1:-1));
   world.cityMissionPickups=createCityMissionPickups(scene);
@@ -1790,8 +1812,11 @@ function animateWorld() {
   if (!world) return;
   requestAnimationFrame(animateWorld);
   const now = performance.now();
+  const frameInterval = 1000 / (world.renderProfile?.maxFps || 60);
+  if (now - (world.lastRenderAt || 0) < frameInterval) return;
   const delta = Math.min((now - world.lastFrame) / 1000, .05);
   world.lastFrame = now;
+  world.lastRenderAt = now;
   const local = world.playerObjects.get(selfId);
   let localMoving = false;
 
