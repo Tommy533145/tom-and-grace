@@ -131,8 +131,13 @@
           <section class="media-card tv-card shared-music-card">
             <div class="media-card-heading"><div class="media-icon tv-icon">♫</div><div><strong>Shared YouTube</strong><small>Watch and listen together</small></div><span class="shared-pill">SHARED</span></div>
             <div class="tv-screen-wrap"><div id="youtubePlayer" class="youtube-player"></div><div id="tvPlaceholder" class="tv-placeholder"><span class="tv-play">▶</span><strong>Share a video with everyone</strong><small>Paste a YouTube link below</small></div><button id="youtubeTapToPlay" class="youtube-tap-play hidden" type="button">▶ Tap to play</button></div>
-            <div class="youtube-controls"><input id="musicInput" class="media-input" placeholder="Paste YouTube link here…" aria-label="YouTube video link" /><button id="musicAddButton" class="mini-button" type="button">Share</button></div>
-            <div id="musicNowPlaying" class="music-now-playing" role="status">Paste a link and press Share.</div>
+            <div class="youtube-controls"><input id="musicInput" class="media-input" placeholder="Paste YouTube link here…" aria-label="YouTube video link" /><button id="musicAddButton" class="mini-button" type="button">Add track</button></div>
+            <div class="playlist-save-row"><input id="playlistNameInput" class="media-input" placeholder="Name this playlist…" aria-label="Playlist name" /><button id="savePlaylistButton" class="mini-button" type="button">Save</button></div>
+            <div class="playlist-library-row"><select id="savedPlaylistSelect" class="media-input" aria-label="Saved playlists"><option value="">Your saved playlists</option></select><button id="playSavedPlaylistButton" class="mini-button" type="button">Play</button></div>
+            <div id="savedPlaylistList" class="saved-playlist-list" aria-live="polite"></div>
+            <div id="musicNowPlaying" class="music-now-playing" role="status">Add songs, save a playlist, then play it anytime.</div>
+            <div id="musicQueueList" class="music-queue-list"><div class="music-queue-empty">The shared room queue is empty.</div></div>
+            <button id="musicNextButton" class="music-next-button" type="button" disabled>Play next track</button>
           </section>
 
           <section class="media-card spotify-card">
