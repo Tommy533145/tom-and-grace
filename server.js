@@ -141,27 +141,55 @@ function createVehicles() {
   ]);
 }
 
-function leaveCurrentRoom(socket) {
-  const roomId = socket.data.roomId;
-  if (!roomId) return;
-  const room = getRoom(roomId);
-  socket.leave(roomId);
-  socket.data.roomId = null;
-  if (!room) return;
+const disconnectCleanupTimers = new Map();
 
-  const player = room.players.get(socket.id);
-  if (player?.vehicleId) {
+function removePlayerFromRoom(roomId, playerId, notice = 'left the penthouse.') {
+  const room = getRoom(roomId);
+  if (!room) return;
+  const player = room.players.get(playerId);
+  if (!player) return;
+  if (player.vehicleId) {
     const vehicle = room.vehicles.get(player.vehicleId);
-    if (vehicle?.driverId === socket.id) vehicle.driverId = null;
+    if (vehicle?.driverId === playerId) vehicle.driverId = null;
   }
-  room.players.delete(socket.id);
+  room.players.delete(playerId);
   if (room.players.size === 0) {
     rooms.delete(roomId);
   } else {
     io.to(roomId).emit('room:players', publicPlayers(room));
     io.to(roomId).emit('room:vehicles', publicVehicles(room));
-    io.to(roomId).emit('system:notice', { text: `${player?.name || 'A player'} left the penthouse.` });
+    io.to(roomId).emit('system:notice', { text: `${player.name || 'A player'} ${notice}` });
   }
+}
+
+function leaveCurrentRoom(socket) {
+  const roomId = socket.data.roomId;
+  if (!roomId) return;
+  const timer = disconnectCleanupTimers.get(socket.id);
+  if (timer) clearTimeout(timer);
+  disconnectCleanupTimers.delete(socket.id);
+  socket.leave(roomId);
+  socket.data.roomId = null;
+  removePlayerFromRoom(roomId, socket.id);
+}
+
+function scheduleDisconnectedRoomCleanup(socket) {
+  const roomId = socket.data.roomId;
+  const room = roomId && getRoom(roomId);
+  const player = room?.players.get(socket.id);
+  if (!roomId || !player) return;
+  const previous = disconnectCleanupTimers.get(socket.id);
+  if (previous) clearTimeout(previous);
+  // Keep the authoritative player state alive long enough for Socket.IO recovery
+  // or a fresh browser socket to reclaim it using the stable per-tab clientId.
+  const timer = setTimeout(() => {
+    disconnectCleanupTimers.delete(socket.id);
+    const currentRoom = getRoom(roomId);
+    if (currentRoom?.players.get(socket.id) !== player) return;
+    removePlayerFromRoom(roomId, socket.id, 'disconnected.');
+  }, 2 * 60 * 1000);
+  timer.unref?.();
+  disconnectCleanupTimers.set(socket.id, timer);
 }
 
 const SPAWN_POINTS = [
@@ -176,6 +204,9 @@ function joinRoom(socket, roomId, profile, callback) {
   }
 
   leaveCurrentRoom(socket);
+  const clientId = typeof profile?.clientId === 'string'
+    ? profile.clientId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64)
+    : '';
   let room = getRoom(roomId);
   if (!room) {
     room = {
@@ -192,28 +223,50 @@ function joinRoom(socket, roomId, profile, callback) {
 
   room.roomType = 'penthouse';
 
+  // A reconnect that could not use Socket.IO's session recovery gets a new
+  // socket.id. Reclaim the previous player by its stable per-tab clientId.
+  let resumedPlayer = null;
+  if (clientId) {
+    for (const [oldSocketId, oldPlayer] of room.players.entries()) {
+      if (oldSocketId !== socket.id && oldPlayer.clientId === clientId) {
+        const timer = disconnectCleanupTimers.get(oldSocketId);
+        if (timer) clearTimeout(timer);
+        disconnectCleanupTimers.delete(oldSocketId);
+        room.players.delete(oldSocketId);
+        if (oldPlayer.vehicleId) {
+          const vehicle = room.vehicles.get(oldPlayer.vehicleId);
+          if (vehicle?.driverId === oldSocketId) vehicle.driverId = socket.id;
+        }
+        resumedPlayer = oldPlayer;
+        break;
+      }
+    }
+  }
+
   if (room.players.size >= MAX_PLAYERS_PER_ROOM) {
     return callback?.({ ok: false, error: `This penthouse is full (${MAX_PLAYERS_PER_ROOM} players maximum).` });
   }
 
   const character = ['tom', 'grace', 'alex', 'riley'].includes(profile?.character)
     ? profile.character
-    : (room.players.size === 0 ? 'tom' : 'grace');
+    : (resumedPlayer?.character || (room.players.size === 0 ? 'tom' : 'grace'));
   const defaultName = character.charAt(0).toUpperCase() + character.slice(1);
   const spawn = SPAWN_POINTS[room.players.size] || { x: 0, z: 5.8 };
   const player = {
+    ...(resumedPlayer || {}),
     id: socket.id,
-    name: cleanText(profile?.name, defaultName, 18),
+    clientId: clientId || resumedPlayer?.clientId || '',
+    name: cleanText(profile?.name, resumedPlayer?.name || defaultName, 18),
     character,
-    outfit: normalizeOutfit(profile?.outfit),
-    position: { ...spawn },
-    rotationY: 0,
+    outfit: profile?.outfit ? normalizeOutfit(profile.outfit) : (resumedPlayer?.outfit || normalizeOutfit()),
+    position: resumedPlayer?.position ? { ...resumedPlayer.position } : { ...spawn },
+    rotationY: resumedPlayer?.rotationY || 0,
     moving: false,
-    action: 'none',
-    danceStyle: 'groove',
-    bedId: null,
-    vehicleId: null,
-    zone: 'penthouse',
+    action: resumedPlayer?.action || 'none',
+    danceStyle: resumedPlayer?.danceStyle || 'groove',
+    bedId: resumedPlayer?.bedId || null,
+    vehicleId: resumedPlayer?.vehicleId || null,
+    zone: resumedPlayer?.zone || 'penthouse',
     voiceJoined: false,
     voiceMuted: true
   };
@@ -240,6 +293,12 @@ function joinRoom(socket, roomId, profile, callback) {
 }
 
 io.on('connection', (socket) => {
+  if (socket.recovered) {
+    const timer = disconnectCleanupTimers.get(socket.id);
+    if (timer) clearTimeout(timer);
+    disconnectCleanupTimers.delete(socket.id);
+  }
+
   socket.on('room:create', (payload = {}, callback) => {
     let roomId;
     do { roomId = makeRoomId(); } while (rooms.has(roomId));
@@ -547,7 +606,31 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('disconnect', () => leaveCurrentRoom(socket));
+  socket.on('room:sync', (_payload, callback) => {
+    const roomId = socket.data.roomId;
+    const room = roomId && getRoom(roomId);
+    if (!room || !room.players.has(socket.id)) {
+      return callback?.({ ok: false, error: 'Your room session has expired. Rejoin using your invite link.' });
+    }
+    const player = room.players.get(socket.id);
+    player.voiceJoined = false;
+    player.voiceMuted = true;
+    callback?.({
+      ok: true,
+      roomId,
+      selfId: socket.id,
+      players: publicPlayers(room),
+      vehicles: publicVehicles(room),
+      chat: room.chat.slice(-50),
+      youtube: projectedYoutubeState(room.youtube),
+      musicQueue: room.musicQueue.map((item) => ({ ...item })),
+      musicIndex: room.musicIndex,
+      roomType: room.roomType || 'penthouse'
+    });
+    io.to(roomId).emit('room:players', publicPlayers(room));
+  });
+
+  socket.on('disconnect', () => scheduleDisconnectedRoomCleanup(socket));
 });
 
 server.listen(PORT, '0.0.0.0', () => {
