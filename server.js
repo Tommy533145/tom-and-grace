@@ -19,6 +19,7 @@ const rooms = new Map();
 const OUTFIT_COLORS = new Set(['cream', 'rose', 'midnight', 'sage', 'lavender', 'black', 'sky', 'cherry']);
 const OUTFIT_STYLES = new Set(['cozy', 'streetwear', 'elegant', 'sporty']);
 const ACCESSORIES = new Set(['none', 'beanie', 'cap', 'sunglasses']);
+const ROOM_TYPES = new Set(['penthouse', 'music', 'cozy', 'game', 'garden', 'cinema']);
 const DANCE_STYLES = new Set(['groove', 'disco', 'salsa', 'bounce', 'sway']);
 const BED_SPOTS = { 'bed-one': { x: -5.15, z: -5.2 }, 'bed-two': { x: 4.05, z: -5.2 } };
 
@@ -178,7 +179,8 @@ function joinRoom(socket, roomId, profile, callback) {
       chat: [],
       youtube: { videoId: '', isPlaying: false, currentTime: 0, updatedAt: Date.now() },
       musicQueue: [],
-      musicIndex: -1
+      musicIndex: -1,
+      roomType: ROOM_TYPES.has(profile?.roomType) ? profile.roomType : 'penthouse'
     };
     rooms.set(roomId, room);
   }
@@ -223,7 +225,8 @@ function joinRoom(socket, roomId, profile, callback) {
     chat: room.chat.slice(-50),
     youtube: projectedYoutubeState(room.youtube),
     musicQueue: room.musicQueue.map((item) => ({ ...item })),
-    musicIndex: room.musicIndex
+    musicIndex: room.musicIndex,
+    roomType: room.roomType || 'penthouse'
   });
   io.to(roomId).emit('room:players', publicPlayers(room));
   io.to(roomId).emit('system:notice', { text: `${player.name} arrived at the penthouse.` });
@@ -253,7 +256,7 @@ io.on('connection', (socket) => {
     const rotationY = Number(position.rotationY);
     if (!Number.isFinite(x) || !Number.isFinite(z)) return;
     const bounds = player.zone === 'city'
-      ? { minX: 27.2, maxX: 53.2, minZ: -17.2, maxZ: 17.2 }
+      ? { minX: 27.2, maxX: 68.0, minZ: -17.2, maxZ: 17.2 }
       : { minX: -8.55, maxX: 21.2, minZ: -8.2, maxZ: 8.2 };
     player.position = {
       x: Math.max(bounds.minX, Math.min(bounds.maxX, x)),
