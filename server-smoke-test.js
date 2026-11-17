@@ -77,28 +77,37 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
   let secondMusicAdd;
   b.clientEmit('music:queue:add', { videoId: '9bZkp7q19f0' }, (response) => { secondMusicAdd = response; });
-  assert.equal(secondMusicAdd?.ok, true, 'second player can share another video');
-  assert.equal(secondMusicAdd.queue.queue.length, 1, 'sharing replaces the previous video instead of growing a hidden queue');
-  assert.equal(secondMusicAdd.queue.queue[0].videoId, '9bZkp7q19f0', 'the latest shared video becomes current');
-  assert.equal(secondMusicAdd.queue.currentIndex, 0, 'the replacement video is the current room item');
-  assert.ok(a.received.some((event) => event.event === 'youtube:load' && event.payload.videoId === '9bZkp7q19f0'), 'replacement video is loaded for the sharing player');
-  assert.ok(b.received.some((event) => event.event === 'youtube:load' && event.payload.videoId === '9bZkp7q19f0'), 'replacement video is synchronized to every other player');
-  assert.ok(b.received.some((event) => event.event === 'music:queue:update' && event.payload.queue.length === 1 && event.payload.queue[0].videoId === '9bZkp7q19f0'), 'replacement state is broadcast room-wide');
+  assert.equal(secondMusicAdd?.ok, true, 'second player can append another video');
+  assert.equal(secondMusicAdd.queue.queue.length, 2, 'adding a track appends to the shared queue');
+  assert.equal(secondMusicAdd.queue.queue[1].videoId, '9bZkp7q19f0', 'new track is kept after the current track');
+
+  let savedPlaylist;
+  a.clientEmit('music:queue:replace', { videoIds: ['dQw4w9WgXcQ', '9bZkp7q19f0', 'M7lc1UVf-VE'] }, (response) => { savedPlaylist = response; });
+  assert.equal(savedPlaylist?.ok, true, 'saved playlist can be shared with the room');
+  assert.equal(savedPlaylist.queue.queue.length, 3, 'shared playlist replaces the room queue with all its tracks');
+  assert.equal(savedPlaylist.queue.currentIndex, 0, 'shared playlist starts at its first track');
+  assert.ok(b.received.some((event) => event.event === 'music:queue:update' && event.payload.queue.length === 3), 'full playlist is broadcast to every room member');
+
   const c = io.connect('player-C');
   let lateJoinResponse;
   c.clientEmit('room:join', { roomId: roomResponse.roomId, profile: { name: 'Alex', character: 'alex' } }, (response) => { lateJoinResponse = response; });
-  assert.equal(lateJoinResponse?.ok, true, 'a third player can join after a video has been shared');
-  assert.equal(lateJoinResponse.youtube?.videoId, '9bZkp7q19f0', 'late joiner receives the current shared video');
+  assert.equal(lateJoinResponse?.ok, true, 'a third player can join after a playlist has been shared');
+  assert.equal(lateJoinResponse.youtube?.videoId, 'dQw4w9WgXcQ', 'late joiner receives the first shared playlist track');
+  assert.equal(lateJoinResponse.musicQueue.length, 3, 'late joiner receives the full shared playlist queue');
   assert.equal(lateJoinResponse.youtube?.isPlaying, false, 'a newly cued video is not reported as playing before a user starts it');
   let selectedMusic;
   a.clientEmit('music:play', { index: 1 }, (response) => { selectedMusic = response; });
-  assert.equal(selectedMusic?.ok, false, 'the hidden second queue entry no longer exists');
+  assert.equal(selectedMusic?.ok, true, 'players can select a track from the shared playlist');
+  assert.ok(b.received.some((event) => event.event === 'youtube:load' && event.payload.videoId === '9bZkp7q19f0'), 'selected playlist track is synchronized to the room');
   let nextMusic;
   a.clientEmit('music:next', {}, (response) => { nextMusic = response; });
-  assert.equal(nextMusic?.ok, false, 'next is safely refused when the simple one-video room has no following track');
+  assert.equal(nextMusic?.ok, true, 'next advances through the shared playlist');
   let invalidMusic;
   b.clientEmit('music:queue:add', { videoId: 'bad' }, (response) => { invalidMusic = response; });
   assert.equal(invalidMusic?.ok, false, 'invalid YouTube identifiers are rejected');
+  let invalidPlaylist;
+  b.clientEmit('music:queue:replace', { videoIds: ['bad'] }, (response) => { invalidPlaylist = response; });
+  assert.equal(invalidPlaylist?.ok, false, 'invalid shared playlists are rejected');
 
   let chatResponse;
   b.clientEmit('chat:send', { text: 'Hello from Grace' }, (response) => { chatResponse = response; });
@@ -141,7 +150,7 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   assert.equal(elevatorBack?.zone, 'penthouse', 'elevator returns to the penthouse');
 
   console.log('PASS simulated two-player room create/join');
-  console.log('PASS shared YouTube replacement, late-join sync, room-wide broadcast and validation');
+  console.log('PASS shared YouTube playlists, queue append/replace, late-join sync and validation');
   console.log('PASS room-wide chat and voice signaling');
   console.log('PASS bed proximity check, sleeping, wake-by-movement');
   console.log('PASS shared dance selection and animation state');
