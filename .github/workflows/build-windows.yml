@@ -2,6 +2,10 @@ name: Build Tom&Grace Windows installer
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
   pull_request:
     branches: [main]
   push:
