@@ -1414,6 +1414,67 @@ function createHouseScene(scene, colliders) {
     addRoomSign(scene, 'COZY RETREAT · FIREPLACE', [-5.0, 2.5, 1.4], '#ffdfc1');
   }
 
+  // ---------------- Second-floor penthouse expansion ----------------
+  // A separate upper level shares the penthouse footprint; floor travel is synchronized by the server.
+  addBox(scene, 'upper-floor-slab', [17.7, .22, 15.7], [0, 3.25, 0], 0xc9b9a9, { roughness: .58 });
+  addBox(scene, 'upper-floor-lounge-rug', [5.6, .045, 4.2], [-4.9, 3.39, 4.55], 0x7f6870, { castShadow: false });
+  addBox(scene, 'upper-master-rug', [5.7, .045, 4.5], [-4.9, 3.39, -4.45], 0x8b7476, { castShadow: false });
+  addBox(scene, 'upper-guest-rug', [5.7, .045, 4.5], [4.9, 3.39, -4.45], 0x74768d, { castShadow: false });
+  addBox(scene, 'upper-office-rug', [5.7, .045, 4.5], [4.9, 3.39, 4.55], 0x6d7e80, { castShadow: false });
+  const upperWall = (name, size, pos, color=0x6d5551) => addBox(scene, name, size, pos, color);
+  // Upper-level room dividers deliberately retain wide door openings.
+  upperWall('upper-master-back-wall',[7.0,2.35,.16],[-5.0,4.48,-7.65]);
+  upperWall('upper-guest-back-wall',[7.0,2.35,.16],[5.0,4.48,-7.65]);
+  upperWall('upper-west-divider-front',[.16,2.35,2.2],[-8.55,4.48,5.9]);
+  upperWall('upper-west-divider-back',[.16,2.35,5.2],[-8.55,4.48,-4.8]);
+  upperWall('upper-east-divider-front',[.16,2.35,2.2],[8.55,4.48,5.9]);
+  upperWall('upper-east-divider-back',[.16,2.35,5.2],[8.55,4.48,-4.8]);
+  upperWall('upper-mid-west-wall',[5.0,2.35,.16],[-6.5,4.48,0]);
+  upperWall('upper-mid-east-wall',[5.0,2.35,.16],[6.5,4.48,0]);
+  // Master suite.
+  addRoomSign(scene, 'MASTER SUITE', [-5.0,5.05,-1.85], '#f1c9bd');
+  addBox(scene,'upper-master-bed-frame',[2.65,.42,3.15],[-5.0,3.63,-5.15],0x76544d);
+  addBox(scene,'upper-master-mattress',[2.52,.28,3.0],[-5.0,3.91,-5.15],0xe8ddd2);
+  addBox(scene,'upper-master-duvet',[2.54,.15,2.1],[-5.0,4.1,-4.65],0xb98591);
+  addBox(scene,'upper-master-headboard',[2.75,1.12,.16],[-5.0,4.05,-6.68],0x654a48);
+  addBox(scene,'upper-master-wardrobe',[.55,1.9,2.1],[-8.0,4.2,-3.0],0x72574e);
+  // Guest bedroom.
+  addRoomSign(scene, 'GUEST BEDROOM', [5.0,5.05,-1.85], '#d2d0ed');
+  addBox(scene,'upper-guest-bed-frame',[2.35,.4,2.9],[5.0,3.62,-5.15],0x55556b);
+  addBox(scene,'upper-guest-mattress',[2.22,.28,2.75],[5.0,3.9,-5.15],0xe3e0ea);
+  addBox(scene,'upper-guest-duvet',[2.24,.15,1.95],[5.0,4.08,-4.7],0x8985ae);
+  addBox(scene,'upper-guest-headboard',[2.5,1.05,.15],[5.0,4.0,-6.62],0x4c4c63);
+  addBox(scene,'upper-guest-desk',[1.6,.12,.75],[7.15,4.0,-2.4],0x8a705f);
+  // Gaming room and office / lounge.
+  addRoomSign(scene, 'GAMING ROOM', [-5.0,5.05,1.55], '#d7d0ff');
+  addBox(scene,'upper-gaming-console',[2.5,.7,.55],[-5.0,3.8,1.0],0x343744);
+  addBox(scene,'upper-gaming-screen',[2.25,1.35,.12],[-5.0,4.85,.62],0x171d2a,{material:new THREE.MeshStandardMaterial({color:0x26394c,emissive:0x254e78,emissiveIntensity:.45})});
+  addBox(scene,'upper-gaming-sofa',[2.7,.55,.9],[-5.0,3.72,6.2],0x6f627f);
+  addBox(scene,'upper-gaming-sofa-back',[2.7,.9,.2],[-5.0,4.15,6.55],0x82748f);
+  addRoomSign(scene, 'PRIVATE OFFICE & LOUNGE', [5.0,5.05,1.55], '#c9e3dc');
+  addBox(scene,'upper-office-desk',[2.4,.14,1.05],[5.2,4.05,2.25],0x725c50);
+  addBox(scene,'upper-office-monitor',[1.35,.85,.12],[5.2,4.55,1.75],0x202a35);
+  addBox(scene,'upper-office-bookcase',[.45,1.85,2.0],[8.0,4.25,5.2],0x69564e);
+  // Decorative staircase beside the central landing. Use the stair button for a reliable floor transition.
+  for(let step=0;step<8;step++){
+    const stair=new THREE.Mesh(new THREE.BoxGeometry(1.55,.18,.55),material(0x927465));
+    stair.position.set(0, .22+step*.39, 2.7-step*.53);
+    stair.castShadow=true; stair.receiveShadow=true; scene.add(stair);
+  }
+  addBox(scene,'staircase-side-rail-left',[.09,3.15,4.2],[-.86,1.55,.8],0x5d4b47);
+  addBox(scene,'staircase-side-rail-right',[.09,3.15,4.2],[.86,1.55,.8],0x5d4b47);
+  addRoomSign(scene, 'UPSTAIRS', [0,5.0,2.7], '#f3d9bd');
+  // Interactive seats are placed in open floor space with clear exit points beside each chair.
+  const upperChairPositions=[{id:'up-lounge-chair',x:-6.2,z:4.45,y:3.36},{id:'up-office-chair',x:5.2,z:4.55,y:3.36},{id:'up-game-chair',x:-5.0,z:2.65,y:3.36},{id:'up-guest-chair',x:6.8,z:-2.1,y:3.36}];
+  upperChairPositions.forEach((chair)=>{
+    addBox(scene,chair.id+'-seat',[.78,.18,.78],[chair.x,chair.y+.48,chair.z],0x9b7770);
+    addBox(scene,chair.id+'-back',[.78,.92,.16],[chair.x,chair.y+.98,chair.z-.3],0x86635f);
+    addBox(scene,chair.id+'-leg-a',[.09,.48,.09],[chair.x-.29,chair.y+.24,chair.z-.28],0x59463f);
+    addBox(scene,chair.id+'-leg-b',[.09,.48,.09],[chair.x+.29,chair.y+.24,chair.z-.28],0x59463f);
+    addBox(scene,chair.id+'-leg-c',[.09,.48,.09],[chair.x-.29,chair.y+.24,chair.z+.28],0x59463f);
+    addBox(scene,chair.id+'-leg-d',[.09,.48,.09],[chair.x+.29,chair.y+.24,chair.z+.28],0x59463f);
+  });
+
   // ---------------- Elevator stations and explorable city promenade ----------------
   function addElevatorStation(position, label) {
     const [x, y, z] = position;
@@ -1772,15 +1833,15 @@ function updatePlayers(nextPlayers) {
       world.playerObjects.set(player.id, object);
     }
     if (player.position) {
-      object.position.set(player.position.x, 0, player.position.z);
-      object.userData.targetPosition = new THREE.Vector3(player.position.x, 0, player.position.z);
+      object.position.set(player.position.x, Number(player.position.y) || 0, player.position.z);
+      object.userData.targetPosition = new THREE.Vector3(player.position.x, Number(player.position.y) || 0, player.position.z);
     }
     object.rotation.y = Number(player.rotationY) || 0;
     object.userData.targetRotationY = Number(player.rotationY) || 0;
     object.userData.networkMoving = Boolean(player.moving);
     object.userData.action = player.action || 'none';
     object.userData.danceStyle = player.danceStyle || 'groove';
-    object.userData.bedId = player.bedId || null;
+    object.userData.bedId = player.bedId || null;\n    object.userData.chairId = player.chairId || null;\n    object.userData.floorY = Number(player.position?.y) || 0;
     object.userData.zone = player.zone || 'penthouse';
     if (player.id === selfId) currentZone = player.zone || currentZone;
     object.visible = !player.vehicleId;
@@ -1958,7 +2019,7 @@ function animateWorld() {
       local.rotation.y = Math.atan2(dx, dz);
       localMoving = Math.hypot(local.position.x - beforeX, local.position.z - beforeZ) > .0001;
     }
-    const currentPosition = { x: local.position.x, z: local.position.z };
+    const currentPosition = { x: local.position.x, y: local.position.y > 1.5 ? 3.36 : 0, z: local.position.z };
     const moved = Math.abs(currentPosition.x - lastSentPosition.x) > .018 || Math.abs(currentPosition.z - lastSentPosition.z) > .018;
     const changedMovingState = localMoving !== world.localMoving;
     if ((localMoving && now - lastMoveSentAt > 50 && moved) || changedMovingState) {
@@ -2003,7 +2064,7 @@ function animateWorld() {
       }
       if (torso) torso.scale.y = 1 + Math.sin(now * .0018 + phase) * .018;
       if (head) head.rotation.z = Math.sin(now * .0018 + phase) * .012;
-    } else if (action === 'dance') {
+    } else if (action === 'sit') {\n      object.rotation.x = 0; object.rotation.z = 0;\n      if (object.visible) object.position.y = (Number(object.userData.floorY) || 0) + .02;\n      if (limbs) { limbs.leftArm.rotation.x = -.12; limbs.rightArm.rotation.x = -.12; limbs.leftArm.rotation.z = -.12; limbs.rightArm.rotation.z = .12; limbs.leftLeg.rotation.x = -1.12; limbs.rightLeg.rotation.x = -1.12; }\n      if (torso) torso.scale.y = 1;\n      if (head) head.rotation.z = 0;\n    } else if (action === 'dance') {
       object.rotation.x = 0;
       const style = object.userData.danceStyle || 'groove';
       const speed = style === 'sway' ? 1.4 : style === 'salsa' ? 4.2 : 3.2;
@@ -2072,7 +2133,7 @@ function animateWorld() {
   // Follow the local character so the city district is explorable without losing the camera.
   const followedObject = activeVehicleId ? world.vehicleObjects.get(activeVehicleId) : local;
   if (followedObject) {
-    world.cameraTarget.lerp(new THREE.Vector3(followedObject.position.x, .55, followedObject.position.z), Math.min(1, delta * 2.7));
+    world.cameraTarget.lerp(new THREE.Vector3(followedObject.position.x, followedObject.position.y + .55, followedObject.position.z), Math.min(1, delta * 2.7));
     world.camera.position.copy(world.cameraTarget).add(new THREE.Vector3().setFromSpherical(world.cameraSpherical));
     world.camera.lookAt(world.cameraTarget);
   }
