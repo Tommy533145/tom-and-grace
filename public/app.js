@@ -812,14 +812,49 @@ function createCharacter(player) {
     const sideHair = addSphere(root, 'sidehair', 0.13, [0.17, 1.43, -0.005], info.hair, [0.6, 1.4, 0.75]);
     sideHair.rotation.z = -0.1;
   }
-  const eyeMat = material(0x30232a, 0.5);
-  [-0.075, 0.075].forEach((x) => {
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.018, 8, 8), eyeMat);
-    eye.position.set(x, 1.5, 0.194);
+  // Anime-inspired face: oversized expressive eyes, layered highlights and soft blush.
+  const eyeWhite = material(0xfff9f5, 0.28);
+  const irisMat = material(player.character === 'grace' || player.character === 'riley' ? 0x527eaa : 0x6b8b65, 0.24);
+  const pupilMat = material(0x17202e, 0.18);
+  const eyeShine = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  [-0.078, 0.078].forEach((x) => {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.052, 16, 12), eyeWhite);
+    eye.scale.set(0.86, 1.18, 0.42);
+    eye.position.set(x, 1.505, 0.188);
     root.add(eye);
+    const iris = new THREE.Mesh(new THREE.SphereGeometry(0.036, 14, 12), irisMat);
+    iris.scale.set(0.9, 1.12, 0.55);
+    iris.position.set(x, 1.5, 0.209);
+    root.add(iris);
+    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.022, 12, 10), pupilMat);
+    pupil.scale.z = 0.55;
+    pupil.position.set(x, 1.497, 0.226);
+    root.add(pupil);
+    const shine = new THREE.Mesh(new THREE.SphereGeometry(0.011, 8, 8), eyeShine);
+    shine.position.set(x - 0.009, 1.516, 0.239);
+    root.add(shine);
+    const lash = new THREE.Mesh(new THREE.BoxGeometry(0.092, 0.012, 0.012), material(info.hair));
+    lash.position.set(x, 1.56, 0.196);
+    lash.rotation.z = x < 0 ? -0.12 : 0.12;
+    root.add(lash);
   });
-  const smile = new THREE.Mesh(new THREE.TorusGeometry(0.035, 0.006, 5, 12, Math.PI), material(0x9c5e59));
-  smile.position.set(0, 1.423, 0.197);
+  const blushMat = new THREE.MeshBasicMaterial({ color: 0xf29a9c, transparent: true, opacity: 0.42, depthWrite: false });
+  [-1, 1].forEach((side) => {
+    const blush = new THREE.Mesh(new THREE.SphereGeometry(0.027, 10, 8), blushMat);
+    blush.scale.set(1.55, 0.48, 0.25);
+    blush.position.set(side * 0.135, 1.435, 0.184);
+    root.add(blush);
+  });
+  // A few tapered fringe locks give the hair a hand-crafted anime silhouette.
+  [-1, 0, 1].forEach((side) => {
+    const fringe = new THREE.Mesh(new THREE.ConeGeometry(0.085, 0.22, 7), material(info.hair));
+    fringe.position.set(side * 0.105, 1.48 + (side === 0 ? 0.035 : 0), 0.105);
+    fringe.rotation.z = side * -0.34;
+    fringe.rotation.x = -0.18;
+    root.add(fringe);
+  });
+  const smile = new THREE.Mesh(new THREE.TorusGeometry(0.027, 0.005, 5, 12, Math.PI), material(0x9c5e59));
+  smile.position.set(0, 1.423, 0.198);
   smile.rotation.z = Math.PI;
   root.add(smile);
   if (outfit.accessory === 'beanie') {
