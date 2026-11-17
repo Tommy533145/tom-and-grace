@@ -233,9 +233,10 @@ function joinRoom(socket, roomId, profile, callback) {
 }
 
 io.on('connection', (socket) => {
-  socket.on('room:create', (profile, callback) => {
+  socket.on('room:create', (payload = {}, callback) => {
     let roomId;
     do { roomId = makeRoomId(); } while (rooms.has(roomId));
+    const profile = { ...(payload.profile || {}), roomType: payload.roomType };
     joinRoom(socket, roomId, profile, callback);
   });
 
