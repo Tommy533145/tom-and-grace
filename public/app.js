@@ -1486,8 +1486,33 @@ function createHouseScene(scene, colliders) {
 }
 
 const WEATHER_PRESETS={clear:{sky:0x8db9d5,fog:0xb8d0dc,near:90,far:190,sun:0xffe4bf,power:2.4,hemi:1.55,exposure:1.18,n:0},sunset:{sky:0xd68f78,fog:0xe4b09b,near:65,far:165,sun:0xffa36e,power:1.55,hemi:1.05,exposure:1.28,n:0},night:{sky:0x101a30,fog:0x26334b,near:48,far:135,sun:0x8da9e8,power:.32,hemi:.42,exposure:.82,n:0},rain:{sky:0x526477,fog:0x71808c,near:30,far:105,sun:0x9aacc2,power:.48,hemi:.7,exposure:.9,n:520},storm:{sky:0x303b50,fog:0x4b5668,near:24,far:90,sun:0x7c8ba7,power:.22,hemi:.38,exposure:.78,n:720},snow:{sky:0xa8bdca,fog:0xd0dce1,near:38,far:125,sun:0xd7e8f5,power:.82,hemi:1.05,exposure:1.02,n:380},fog:{sky:0x89949b,fog:0xc0c7c9,near:12,far:62,sun:0xc5cbd0,power:.58,hemi:.8,exposure:.92,n:0}};
+function createSunsetVisuals(scene){
+ const group=new THREE.Group();
+ const sky=new THREE.Mesh(
+  new THREE.SphereGeometry(420,32,20),
+  new THREE.ShaderMaterial({
+   side:THREE.BackSide,depthWrite:false,
+   vertexShader:'varying vec3 vDirection; void main(){vDirection=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+   fragmentShader:'varying vec3 vDirection; void main(){float h=clamp(vDirection.y*.5+.5,0.0,1.0);vec3 horizon=vec3(1.0,.43,.25);vec3 peach=vec3(.72,.27,.34);vec3 zenith=vec3(.12,.12,.29);vec3 c=mix(horizon,peach,smoothstep(.04,.48,h));c=mix(c,zenith,smoothstep(.48,.98,h));float glow=exp(-pow((h-.53)*10.0,2.0));c+=vec3(.22,.075,.025)*glow;gl_FragColor=vec4(c,1.0);}'
+  })
+ );
+ group.add(sky);
+ const sunMaterial=new THREE.MeshBasicMaterial({color:0xffd08a});
+ const sun=new THREE.Mesh(new THREE.SphereGeometry(9,32,24),sunMaterial);
+ sun.position.set(150,29,-4);group.add(sun);
+ const halo=new THREE.Mesh(new THREE.SphereGeometry(15,32,24),new THREE.MeshBasicMaterial({color:0xff945f,transparent:true,opacity:.22,depthWrite:false}));
+ halo.position.copy(sun.position);group.add(halo);
+ const outerGlow=new THREE.Mesh(new THREE.SphereGeometry(23,32,24),new THREE.MeshBasicMaterial({color:0xf06b50,transparent:true,opacity:.10,depthWrite:false}));
+ outerGlow.position.copy(sun.position);group.add(outerGlow);
+ const cloudMaterial=new THREE.MeshBasicMaterial({color:0xf5a078,transparent:true,opacity:.25,depthWrite:false});
+ [[112,22,-28,18,2.2,5],[130,26,25,23,2.5,6],[168,20,18,17,1.8,5],[92,25,38,14,1.6,4]].forEach(([x,y,z,sx,sy,sz])=>{
+  const cloud=new THREE.Mesh(new THREE.SphereGeometry(1,20,12),cloudMaterial);
+  cloud.position.set(x,y,z);cloud.scale.set(sx,sy,sz);group.add(cloud);
+ });
+ group.renderOrder=-5;scene.add(group);return group;
+}
 function clearWeatherParticles(){if(!world?.weather)return;world.scene.remove(world.weather.points);world.weather.points.geometry.dispose();world.weather.points.material.dispose();world.weather=null;}
-function applyWeather(kind,announce=false){const p=WEATHER_PRESETS[kind]||WEATHER_PRESETS.clear;activeWeatherKind=kind;try{localStorage.setItem('tg-player-weather',kind);}catch(_error){}const select=$('weatherSelect');if(select&&select.value!==kind)select.value=kind;if(!world)return;clearWeatherParticles();world.weatherKind=kind;world.scene.background=new THREE.Color(p.sky);if(world.scene.fog){world.scene.fog.color.setHex(p.fog);world.scene.fog.near=p.near;world.scene.fog.far=p.far;}else world.scene.fog=new THREE.Fog(p.fog,p.near,p.far);world.renderer.toneMappingExposure=p.exposure;world.sunLight.color.setHex(p.sun);world.sunLight.intensity=p.power;world.hemiLight.intensity=p.hemi;world.backGlow.intensity=kind==='night'?1:kind==='storm'?.35:.8;world.frontGlow.intensity=kind==='night'?.72:.5;world.container.dataset.weather=kind;
+function applyWeather(kind,announce=false){const p=WEATHER_PRESETS[kind]||WEATHER_PRESETS.clear;activeWeatherKind=kind;try{localStorage.setItem('tg-player-weather',kind);}catch(_error){}const select=$('weatherSelect');if(select&&select.value!==kind)select.value=kind;if(!world)return;clearWeatherParticles();if(kind==='sunset'){if(!world.sunsetVisuals)world.sunsetVisuals=createSunsetVisuals(world.scene);world.sunsetVisuals.visible=true;}else if(world.sunsetVisuals)world.sunsetVisuals.visible=false;world.weatherKind=kind;world.scene.background=new THREE.Color(p.sky);if(world.scene.fog){world.scene.fog.color.setHex(p.fog);world.scene.fog.near=p.near;world.scene.fog.far=p.far;}else world.scene.fog=new THREE.Fog(p.fog,p.near,p.far);world.renderer.toneMappingExposure=p.exposure;world.sunLight.color.setHex(p.sun);world.sunLight.intensity=p.power;world.hemiLight.intensity=p.hemi;world.backGlow.intensity=kind==='night'?1:kind==='storm'?.35:.8;world.frontGlow.intensity=kind==='night'?.72:.5;world.container.dataset.weather=kind;
 if(p.n){const count=p.n,positions=new Float32Array(count*3),velocities=new Float32Array(count*3);for(let i=0;i<count;i++){positions[i*3]=(Math.random()-.5)*75;positions[i*3+1]=Math.random()*28;positions[i*3+2]=(Math.random()-.5)*65;velocities[i*3]=(Math.random()-.5)*(kind==='snow'?.65:.22);velocities[i*3+1]=kind==='snow'?.8+Math.random()*1.2:13+Math.random()*8;velocities[i*3+2]=(Math.random()-.5)*(kind==='snow'?.65:.22);}const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));const material=new THREE.PointsMaterial({color:kind==='snow'?0xf4f8ff:0xc8d9e8,size:kind==='snow'?.13:.055,transparent:true,opacity:kind==='snow'?.88:.62,depthWrite:false});const points=new THREE.Points(geometry,material);points.frustumCulled=false;world.scene.add(points);world.weather={points,positions,velocities,count,kind};}
 if(announce){const names={clear:'Clear day',sunset:'Golden sunset',night:'Night',rain:'Rain',storm:'Thunderstorm',snow:'Snow',fog:'Fog'};showToast('Weather changed: '+names[kind]);}}
 function updateWeather(delta,now){const w=world?.weather;if(!w)return;const center=world.cameraTarget;for(let i=0;i<w.count;i++){const j=i*3;w.positions[j]+=w.velocities[j]*delta;w.positions[j+1]-=w.velocities[j+1]*delta;w.positions[j+2]+=w.velocities[j+2]*delta;if(w.positions[j+1]<0){w.positions[j]=center.x+(Math.random()-.5)*70;w.positions[j+1]=18+Math.random()*12;w.positions[j+2]=center.z+(Math.random()-.5)*60;}if(w.kind==='snow')w.positions[j]+=Math.sin(now*.0005+i)*delta*.18;}w.points.geometry.attributes.position.needsUpdate=true;if(w.kind==='storm'&&Math.random()<.0015){world.sunLight.intensity=2.2;world.lightningUntil=now+100;}if(world.lightningUntil&&now>world.lightningUntil){world.sunLight.intensity=WEATHER_PRESETS.storm.power;world.lightningUntil=0;}}
