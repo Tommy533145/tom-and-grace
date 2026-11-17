@@ -1005,9 +1005,12 @@ function createHouseScene(scene, colliders) {
   // A central hallway connects the living room, kitchen and both bedrooms.
   [-1.25, 1.25].forEach((x, side) => {
     const sideName = side === 0 ? 'west' : 'east';
+    // Open the west side into one large lounge/garden in these two room layouts.
+    if (side === 0 && ['music', 'garden'].includes(activeRoomType)) return;
+    // Game Night gets an open arcade/game wing.
+    if (side === 1 && activeRoomType === 'game') return;
     vertical(`${sideName}-hall-wall-front`, x, 4.9, 7.9);
     if (side === 1) {
-      // The east-side doorway opens into the kitchen and leads to the rooftop garage.
       vertical(`${sideName}-hall-wall-middle-a`, x, -4.05, -1.2);
       vertical(`${sideName}-hall-wall-middle-b`, x, 1.2, 3.05);
     } else {
@@ -1015,11 +1018,17 @@ function createHouseScene(scene, colliders) {
     }
     vertical(`${sideName}-hall-wall-back`, x, -7.9, -5.05);
   });
-  // Bedroom/living partitions leave a doorway at the center of each wing.
-  horizontal('west-room-divider-a', -8.9, -6.05, 0, 0x806760);
-  horizontal('west-room-divider-b', -4.05, -1.25, 0, 0x806760);
-  horizontal('east-room-divider-a', 1.25, 4.05, 0, 0x806760);
-  horizontal('east-room-divider-b', 6.05, 8.9, 0, 0x806760);
+  // Each selected room has a different walkable floor plan, not only a color filter.
+  // Music Lounge and Garden Villa open the west wing into a larger shared space.
+  if (!['music', 'garden'].includes(activeRoomType)) {
+    horizontal('west-room-divider-a', -8.9, -6.05, 0, 0x806760);
+    horizontal('west-room-divider-b', -4.05, -1.25, 0, 0x806760);
+  }
+  // Game Night opens the east wing into a dedicated games room.
+  if (activeRoomType !== 'game') {
+    horizontal('east-room-divider-a', 1.25, 4.05, 0, 0x806760);
+    horizontal('east-room-divider-b', 6.05, 8.9, 0, 0x806760);
+  }
   // Compact ensuite bathroom in the back-east corner, entered from bedroom two.
   vertical('bathroom-divider-front', 6.25, -7.9, -4.55, 0x718987);
   vertical('bathroom-divider-back', 6.25, -2.75, -1.35, 0x718987);
@@ -1145,9 +1154,20 @@ function createHouseScene(scene, colliders) {
 
   // Large furniture also blocks walking, so characters naturally use the clear paths.
   colliders.push(
-    { minX: -6.75, maxX: -3.65, minZ: 5.62, maxZ: 6.72 }, // living sofa
-    { minX: -6.85, maxX: -3.45, minZ: .30, maxZ: 1.12 }, // TV console
-    { minX: -6.0, maxX: -4.0, minZ: 3.38, maxZ: 4.52 }, // coffee table
+    ...(activeRoomType === 'music' || activeRoomType === 'garden' ? [] : [
+      { minX: -6.75, maxX: -3.65, minZ: 5.62, maxZ: 6.72 }, // living sofa
+      { minX: -6.85, maxX: -3.45, minZ: .30, maxZ: 1.12 }, // TV console
+      { minX: -6.0, maxX: -4.0, minZ: 3.38, maxZ: 4.52 } // coffee table
+    ]),
+    ...(activeRoomType === 'game' ? [] : [
+      { minX: 2.72, maxX: 5.42, minZ: -6.95, maxZ: -3.35 } // bedroom two bed
+    ]));
+  /* Additional theme-specific furniture collision is registered below. */
+  colliders.push(
+    ...(activeRoomType === 'game' ? [] : [
+      { minX: 2.72, maxX: 5.42, minZ: -6.95, maxZ: -3.35 }
+    ]),
+    { minX: -8.65, maxX: -8.0, minZ: 2.35, maxZ: 4.35 }, // bookcase
     { minX: -8.65, maxX: -8.0, minZ: 2.35, maxZ: 4.35 }, // bookcase
     { minX: 1.62, maxX: 2.7, minZ: 1.55, maxZ: 2.75 }, // fridge
     { minX: 3.48, maxX: 6.02, minZ: 3.62, maxZ: 4.98 }, // kitchen island
@@ -1220,6 +1240,68 @@ function createHouseScene(scene, colliders) {
     }
   });
 
+  // Room-specific architecture and furniture: each choice changes the actual playable layout.
+  if (activeRoomType === 'music') {
+    ['sofa-base','sofa-back','sofa-arm-left','sofa-arm-right','tv-console','living-tv-body','living-tv-screen','coffee-table','living-bookcase'].forEach((prefix) => {
+      scene.children.filter((o) => o.name.startsWith(prefix)).forEach((o) => { o.visible = false; });
+    });
+    addBox(scene, 'music-lounge-dance-floor', [6.8, .12, 6.2], [-5.15, .16, 4.2], 0x26233b);
+    for (let i = 0; i < 8; i++) addBox(scene, 'music-lounge-floor-tile', [.72, .035, .72], [-8.0 + (i % 4) * 1.85, .24, 2.1 + Math.floor(i / 4) * 3.7], i % 2 ? 0x7854a5 : 0x3e8e9b);
+    addBox(scene, 'music-lounge-stage', [3.2, .48, 1.35], [-5.1, .34, 7.0], 0x30273d);
+    addBox(scene, 'music-lounge-speaker-left', [.65, 1.65, .55], [-7.65, .88, 6.9], 0x171a22);
+    addBox(scene, 'music-lounge-speaker-right', [.65, 1.65, .55], [-2.55, .88, 6.9], 0x171a22);
+    addRoomSign(scene, 'MUSIC LOUNGE · DANCE FLOOR', [-5.1, 2.55, 1.4], '#e5c7ff');
+  } else if (activeRoomType === 'cinema') {
+    ['sofa-base','sofa-back','sofa-arm-left','sofa-arm-right','tv-console','living-tv-body','living-tv-screen','coffee-table'].forEach((prefix) => {
+      scene.children.filter((o) => o.name.startsWith(prefix)).forEach((o) => { o.visible = false; });
+    });
+    addBox(scene, 'cinema-feature-wall', [7.0, 3.1, .35], [-5.15, 1.55, .55], 0x171927);
+    addBox(scene, 'cinema-big-screen', [5.5, 2.45, .06], [-5.15, 1.8, .34], 0x101c2b, { material: new THREE.MeshStandardMaterial({ color: 0x182b40, emissive: 0x17395b, emissiveIntensity: .6, roughness: .18 }) });
+    for (let row = 0; row < 2; row++) for (let col = 0; col < 3; col++) {
+      const x = -7.25 + col * 2.1, z = 3.0 + row * 1.8;
+      addBox(scene, 'cinema-seat-base', [1.45, .55, .95], [x, .38, z], 0x693b4d);
+      addBox(scene, 'cinema-seat-back', [1.45, .95, .22], [x, .9, z + .38], 0x87495b);
+      colliders.push({ minX: x - .74, maxX: x + .74, minZ: z - .5, maxZ: z + .55 });
+    }
+    addRoomSign(scene, 'PRIVATE CINEMA', [-5.15, 2.55, 1.4], '#f0d4a5');
+  } else if (activeRoomType === 'garden') {
+    ['sofa-base','sofa-back','sofa-arm-left','sofa-arm-right','tv-console','living-tv-body','living-tv-screen','coffee-table','living-bookcase'].forEach((prefix) => {
+      scene.children.filter((o) => o.name.startsWith(prefix)).forEach((o) => { o.visible = false; });
+    });
+    addBox(scene, 'garden-villa-path', [1.45, .06, 7.1], [-5.15, .17, 4.15], 0xc4b998);
+    for (let i = 0; i < 4; i++) {
+      const x = -8.1 + i * 2.0;
+      addBox(scene, 'garden-raised-planter', [1.45, .55, 1.5], [x, .36, 2.25], 0x69584a);
+      addBox(scene, 'garden-planter-soil', [1.3, .12, 1.35], [x, .69, 2.25], 0x4c3e32);
+      for (let leaf = 0; leaf < 4; leaf++) addSphere(scene, 'garden-villa-shrub', .35, [x + (leaf % 2) * .38 - .18, 1.0 + (leaf % 2) * .12, 2.0 + Math.floor(leaf / 2) * .45], leaf % 2 ? 0x67936b : 0x82a979, [.8, 1.15, .8]);
+    }
+    addBox(scene, 'garden-pergola-roof', [6.9, .18, 1.4], [-5.15, 2.75, 6.7], 0x6b5d4c);
+    [-8.3,-2.0].forEach((x) => addBox(scene, 'garden-pergola-post', [.16,2.7,.16], [x,1.35,6.7], 0x735f4b));
+    addRoomSign(scene, 'GARDEN VILLA · ATRIUM', [-5.15, 2.5, 1.4], '#d8f1cb');
+  } else if (activeRoomType === 'game') {
+    ['bed-two-frame','bed-two-mattress','bed-two-duvet','bed-two-headboard','bed-two-pillow','bed-two-nightstand','bed-two-wardrobe','bed-two-wardrobe-door'].forEach((prefix) => {
+      scene.children.filter((o) => o.name.startsWith(prefix)).forEach((o) => { o.visible = false; });
+    });
+    addBox(scene, 'game-room-floor', [7.1, .06, 7.2], [5.1, .16, -3.95], 0x343a50);
+    addBox(scene, 'game-room-pool-table', [3.2, .82, 1.8], [5.0, .48, -4.3], 0x28634e);
+    addBox(scene, 'game-room-pool-table-top', [3.0, .08, 1.6], [5.0, .93, -4.3], 0x237b59);
+    for (let i = 0; i < 3; i++) {
+      const x = 2.15 + i * 2.65;
+      addBox(scene, 'game-room-arcade-cabinet', [.9, 1.85, .75], [x, .94, -1.45], 0x292b40);
+      addBox(scene, 'game-room-arcade-screen', [.68, .58, .055], [x, 1.35, -1.84], 0x64b7c7, { material: new THREE.MeshStandardMaterial({ color: 0x64b7c7, emissive: 0x327a99, emissiveIntensity: .7 }) });
+      colliders.push({ minX: x - .48, maxX: x + .48, minZ: -1.95, maxZ: -.95 });
+    }
+    addRoomSign(scene, 'GAME ROOM · ARCADE & POOL', [5.0, 2.55, -1.0], '#d8d2ff');
+  } else if (activeRoomType === 'cozy') {
+    addBox(scene, 'cozy-retreat-fireplace', [2.2, 1.75, .42], [-8.0, .9, 1.0], 0x6a4b43);
+    addBox(scene, 'cozy-retreat-fireplace-opening', [1.05, .95, .08], [-8.0, .88, .75], 0x171b20);
+    addBox(scene, 'cozy-retreat-fire-glow', [.72, .5, .06], [-8.0, .62, .69], 0xf18a4c, { material: new THREE.MeshStandardMaterial({ color: 0xf18a4c, emissive: 0xd95d25, emissiveIntensity: 1.2 }) });
+    addBox(scene, 'cozy-reading-nook-rug', [3.4, .06, 3.1], [-4.0, .17, 3.4], 0x98736d);
+    addBox(scene, 'cozy-reading-chair', [1.25, .85, 1.2], [-3.9, .48, 4.1], 0x9b6e68);
+    addBox(scene, 'cozy-reading-lamp', [.12, 1.9, .12], [-2.65, .98, 3.4], 0x665046);
+    addRoomSign(scene, 'COZY RETREAT · FIREPLACE', [-5.0, 2.5, 1.4], '#ffdfc1');
+  }
+
   // ---------------- Elevator stations and explorable city promenade ----------------
   function addElevatorStation(position, label) {
     const [x, y, z] = position;
@@ -1239,6 +1321,38 @@ function createHouseScene(scene, colliders) {
     addRoomSign(scene, label === 'penthouse' ? 'Elevator · City' : 'Elevator · Home', [x, y + 3.15, z - 1.05], '#b9e1da');
   }
   addElevatorStation([19.2, 0, -6.0], 'penthouse');
+
+  // Walk-in Penthouse Mini Mart: physical walls, glass storefront, open doorway, shelves and counter.
+  const martGlass = new THREE.MeshPhysicalMaterial({ color: 0xa8d9d8, transparent: true, opacity: .34, roughness: .12, metalness: .12, transmission: .2 });
+  addBox(scene, 'penthouse-mart-floor', [6.2, .08, 5.2], [14.45, .08, -.55], 0xc6b9a7, { roughness: .72 });
+  addBox(scene, 'penthouse-mart-back-wall', [6.2, 2.8, .18], [14.45, 1.48, -3.15], 0x6b5550);
+  addBox(scene, 'penthouse-mart-left-wall', [.18, 2.8, 5.2], [11.35, 1.48, -.55], 0x6b5550);
+  addBox(scene, 'penthouse-mart-right-wall', [.18, 2.8, 5.2], [17.55, 1.48, -.55], 0x6b5550);
+  addBox(scene, 'penthouse-mart-front-left', [1.65, 2.8, .18], [12.0, 1.48, 2.05], 0x6b5550);
+  addBox(scene, 'penthouse-mart-front-right', [1.65, 2.8, .18], [16.9, 1.48, 2.05], 0x6b5550);
+  addBox(scene, 'penthouse-mart-glass-left', [.06, 1.85, 1.05], [12.95, 1.62, 2.0], 0xa8d9d8, { material: martGlass });
+  addBox(scene, 'penthouse-mart-glass-right', [.06, 1.85, 1.05], [15.95, 1.62, 2.0], 0xa8d9d8, { material: martGlass });
+  addBox(scene, 'penthouse-mart-sign-board', [4.1, .62, .12], [14.45, 3.05, 2.0], 0x344d4c);
+  addRoomSign(scene, 'PENTHOUSE MINI MART', [14.45, 3.12, 1.9], '#d8f1cb');
+  // Grocery aisles are arranged along the sides, leaving a clear central walking aisle.
+  [12.25, 16.65].forEach((x, side) => {
+    addBox(scene, 'penthouse-mart-shelf', [.62, 1.65, 3.25], [x, .88, -.55], 0x806a5b);
+    for (let row = 0; row < 3; row++) for (let col = 0; col < 3; col++) {
+      addBox(scene, 'penthouse-mart-grocery', [.42, .34, .38], [x, .48 + row * .48, -1.65 + col * 1.05], [0xc98b66, 0x8da98b, 0xd6c08b, 0x9aabc2, 0xb88c98][(row + col + side) % 5]);
+    }
+  });
+  addBox(scene, 'penthouse-mart-counter', [1.7, .95, .58], [14.45, .48, -2.55], 0x715347);
+  addBox(scene, 'penthouse-mart-counter-top', [1.85, .12, .68], [14.45, 1.0, -2.55], 0xd5c0a5);
+  addBox(scene, 'penthouse-mart-checkout-screen', [.28, .24, .12], [14.45, 1.2, -2.35], 0x26353a);
+  colliders.push(
+    { minX: 11.2, maxX: 11.5, minZ: -3.2, maxZ: 2.2 },
+    { minX: 17.4, maxX: 17.7, minZ: -3.2, maxZ: 2.2 },
+    { minX: 11.5, maxX: 12.85, minZ: 1.9, maxZ: 2.2 },
+    { minX: 16.05, maxX: 17.4, minZ: 1.9, maxZ: 2.2 },
+    { minX: 12.0, maxX: 12.55, minZ: -2.25, maxZ: 1.15 },
+    { minX: 16.35, maxX: 16.9, minZ: -2.25, maxZ: 1.15 },
+    { minX: 13.55, maxX: 15.35, minZ: -2.95, maxZ: -2.1 }
+  );
 
   // A compact, walkable skywalk district expands the shared map beyond the rooftop.
   addBox(scene, 'city-district-foundation', [39.5, .18, 35.5], [46.35, -.18, 0], 0x46515d, { roughness: .9, castShadow: false });
@@ -1287,16 +1401,7 @@ function createHouseScene(scene, colliders) {
     addCylinder(scene, 'city-lamp-post', .045, .06, 3.0, [34.0, 1.5, side * 7.0], 0x343b43);
     addSphere(scene, 'city-lamp-globe', .19, [34.0, 3.05, side * 7.0], 0xf2d7a8);
   });
-  // Shopping district: a lit glass-front mall with a walk-up entrance and mart sign.
-  addBox(scene, 'mall-plaza', [10.5, .08, 12.0], [57.2, -.02, 0], 0xb4aaa0, { roughness: .82 });
-  addBox(scene, 'mall-main-building', [8.2, 5.4, 9.0], [60.1, 2.7, 0], 0x596b78, { roughness: .5, metalness: .16 });
-  addBox(scene, 'mall-glass-front', [7.3, 3.5, .12], [60.1, 2.15, -4.58], 0x8dc6d0, { material: new THREE.MeshPhysicalMaterial({ color: 0x9bdce2, transparent: true, opacity: .52, roughness: .12, metalness: .12, transmission: .18 }) });
-  addBox(scene, 'mall-entrance-door', [1.45, 2.8, .16], [60.1, 1.42, -4.68], 0x273842, { material: new THREE.MeshPhysicalMaterial({ color: 0x9bdce2, transparent: true, opacity: .38, roughness: .12 }) });
-  addBox(scene, 'mall-roof-trim', [8.6, .24, 9.35], [60.1, 5.48, 0], 0xd9c2a9);
-  addRoomSign(scene, 'T&G CITY MALL', [60.1, 6.15, -4.95], '#ffe0a8');
-  addRoomSign(scene, 'MART · SHOP HERE', [53.6, 2.7, -1.1], '#b8e7c5');
-  for (let i = 0; i < 4; i++) addBox(scene, 'mall-display-' + i, [.72, 1.05, .62], [56.0 + i * 1.15, .54, -2.3], [0xd4a56f, 0x9dc6b1, 0xd9a2a5, 0x9bb8d2][i]);
-  colliders.push({ minX: 55.95, maxX: 64.25, minZ: -4.55, maxZ: 4.55 });
+  // The city has open retail storefronts and public plazas; the playable mart is inside the penthouse.
   addElevatorStation([28.5, 0, 0], 'city');
   // Raised edge rails frame the walkable skywalk without enclosing the promenade.
   addBox(scene, 'city-edge-north', [27.2, .8, .12], [40.35, .4, -17.7], 0x8b9da4);
@@ -1750,7 +1855,7 @@ function animateWorld() {
     const station = currentZone === 'city' ? { x: 28.5, z: 0 } : { x: 19.2, z: -6.0 };
     const nearElevator = Math.hypot(local.position.x - station.x, local.position.z - station.z) < 3.6;
     $('elevatorButton').disabled = !nearElevator || Boolean(activeVehicleId);
-    const nearMall = currentZone === 'city' && Math.hypot(local.position.x - 53.6, local.position.z - 0.2) < 3.3;
+    const nearMall = currentZone === 'penthouse' && Math.hypot(local.position.x - 14.45, local.position.z - 2.75) < 3.6;
     $('mallButton').disabled = !nearMall || Boolean(activeVehicleId);
     $('mallButton').classList.toggle('mall-nearby', nearMall);
     $('elevatorButton').textContent = currentZone === 'city' ? '↕ Elevator · Home (F)' : '↕ Elevator · City (F)';
@@ -1818,7 +1923,7 @@ function travelElevator() {
       }
     }
     lastSentPosition = response.position || lastSentPosition;
-    showToast(currentZone === 'city' ? 'Welcome to the city promenade.' : 'Back home in the penthouse.');
+    showToast(currentZone === 'city' ? 'Welcome to the expanded city promenade.' : 'Back home in the penthouse. The mini mart is on the rooftop.');
     updateVoiceAudioVolumes();
   });
 }
@@ -1859,9 +1964,9 @@ function renderMall() {
   $('mallCheckout').disabled = total <= 0 || total > shopWallet;
 }
 function openMall() {
-  if (currentZone !== 'city') return showToast('Take the elevator down to the city mall.');
+  if (currentZone !== 'penthouse') return showToast('The mini mart is inside the penthouse only.');
   const local = world && world.playerObjects.get(selfId);
-  if (!local || Math.hypot(local.position.x - 53.6, local.position.z - .2) > 4.2) return showToast('Walk to the mall entrance first.');
+  if (!local || Math.hypot(local.position.x - 14.45, local.position.z - 2.75) > 4.2) return showToast('Walk through the Penthouse Mini Mart entrance first.');
   $('mallPanel').classList.remove('hidden');
   $('activitiesPanel').classList.add('hidden');
   $('wardrobePanel').classList.add('hidden');
