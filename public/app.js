@@ -1006,7 +1006,7 @@ function createHouseScene(scene, colliders) {
   [-1.25, 1.25].forEach((x, side) => {
     const sideName = side === 0 ? 'west' : 'east';
     // Open the west side into one large lounge/garden in these two room layouts.
-    if (side === 0 && ['music', 'garden'].includes(activeRoomType)) return;
+    if (side === 0 && ['music', 'garden', 'cinema'].includes(activeRoomType)) return;
     // Game Night gets an open arcade/game wing.
     if (side === 1 && activeRoomType === 'game') return;
     vertical(`${sideName}-hall-wall-front`, x, 4.9, 7.9);
@@ -1154,7 +1154,7 @@ function createHouseScene(scene, colliders) {
 
   // Large furniture also blocks walking, so characters naturally use the clear paths.
   colliders.push(
-    ...(activeRoomType === 'penthouse' || activeRoomType === 'music' || activeRoomType === 'garden' ? [] : [
+    ...(activeRoomType === 'penthouse' || activeRoomType === 'music' || activeRoomType === 'garden' || activeRoomType === 'cinema' ? [] : [
       { minX: -6.75, maxX: -3.65, minZ: 5.62, maxZ: 6.72 }, // living sofa
       { minX: -6.85, maxX: -3.45, minZ: .30, maxZ: 1.12 }, // TV console
       { minX: -6.0, maxX: -4.0, minZ: 3.38, maxZ: 4.52 }, // coffee table
@@ -1322,6 +1322,7 @@ function createHouseScene(scene, colliders) {
     }
     addRoomSign(scene, 'GAME ROOM · ARCADE & POOL', [5.0, 2.55, -1.0], '#d8d2ff');
   } else if (activeRoomType === 'cozy') {
+    addHouseWall(scene, colliders, 'cozy-reading-nook-divider', [.16, 2.25, 2.3], [-2.25, 1.12, 5.15], 0x80655b);
     addBox(scene, 'cozy-retreat-fireplace', [2.2, 1.75, .42], [-8.0, .9, 1.0], 0x6a4b43);
     addBox(scene, 'cozy-retreat-fireplace-opening', [1.05, .95, .08], [-8.0, .88, .75], 0x171b20);
     addBox(scene, 'cozy-retreat-fire-glow', [.72, .5, .06], [-8.0, .62, .69], 0xf18a4c, { material: new THREE.MeshStandardMaterial({ color: 0xf18a4c, emissive: 0xd95d25, emissiveIntensity: 1.2 }) });
