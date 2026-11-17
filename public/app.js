@@ -393,6 +393,15 @@ socket.on('youtube:playback', (state) => {
 
 socket.on('disconnect', (reason) => {
   if (!activeRoomId) return;
+  // Preserve the latest appearance when the fallback path creates a fresh socket session.
+  const currentPlayer = players.find((player) => player.id === selfId);
+  if (currentPlayer) {
+    activeProfile = {
+      name: currentPlayer.name,
+      character: currentPlayer.character,
+      outfit: { ...(currentPlayer.outfit || {}) }
+    };
+  }
   // Do not leave the room intentionally; Socket.IO may recover the same session.
   leaveVoiceChat(true);
   $('topStatus').textContent = 'Connection lost · reconnecting…';
