@@ -28,7 +28,8 @@ const OUTFIT_STYLES = new Set(['cozy', 'streetwear', 'elegant', 'sporty']);
 const ACCESSORIES = new Set(['none', 'beanie', 'cap', 'sunglasses']);
 const ROOM_TYPES = new Set(['penthouse', 'music', 'cozy', 'game', 'garden', 'cinema']);
 const DANCE_STYLES = new Set(['groove', 'disco', 'salsa', 'bounce', 'sway']);
-const BED_SPOTS = { 'bed-one': { x: -5.15, z: -5.2 }, 'bed-two': { x: 4.05, z: -5.2 } };\nconst CHAIR_SPOTS = { 'up-lounge-chair': {x:-6.2,z:4.45,y:3.36,exitX:-7.25,exitZ:4.45}, 'up-office-chair': {x:5.2,z:4.55,y:3.36,exitX:6.35,exitZ:4.55}, 'up-game-chair': {x:-5.0,z:2.65,y:3.36,exitX:-6.1,exitZ:2.65}, 'up-guest-chair': {x:6.8,z:-2.1,y:3.36,exitX:7.85,exitZ:-2.1} };
+const BED_SPOTS = { 'bed-one': { x: -5.15, z: -5.2 }, 'bed-two': { x: 4.05, z: -5.2 } };
+const CHAIR_SPOTS = { 'up-lounge-chair': {x:-6.2,z:4.45,y:3.36,exitX:-7.25,exitZ:4.45}, 'up-office-chair': {x:5.2,z:4.55,y:3.36,exitX:6.35,exitZ:4.55}, 'up-game-chair': {x:-5.0,z:2.65,y:3.36,exitX:-6.1,exitZ:2.65}, 'up-guest-chair': {x:6.8,z:-2.1,y:3.36,exitX:7.85,exitZ:-2.1} };
 
 app.use(express.static(path.join(__dirname, 'public')));
 const REGION_ID = process.env.REGION_ID || 'global';
@@ -369,24 +370,40 @@ io.on('connection', (socket) => {
     if (player.vehicleId) return callback?.({ ok: false, error: 'Exit the car before changing activities.' });
 
     let nearestBed = null;
+    let nearestChair = null;
     if (nextAction === 'sleep') {
-      if (player.zone !== 'penthouse') return callback?.({ ok: false, error: 'Sleeping is available in the penthouse bedrooms.' });
+      if (player.zone !== 'penthouse' || (Number(player.position.y) || 0) > 1.5) return callback?.({ ok: false, error: 'Sleeping is available in the downstairs bedrooms.' });
       nearestBed = Object.entries(BED_SPOTS)
         .map(([id, spot]) => ({ id, ...spot, distance: Math.hypot(player.position.x - spot.x, player.position.z - spot.z) }))
         .sort((a, b) => a.distance - b.distance)[0];
       if (!nearestBed || nearestBed.distance > 3.5) return callback?.({ ok: false, error: 'Walk closer to a bedroom bed first.' });
     }
+    if (nextAction === 'sit') {
+      if (player.zone !== 'penthouse' || (Number(player.position.y) || 0) < 1.5) return callback?.({ ok: false, error: 'The interactive chairs are upstairs.' });
+      nearestChair = Object.entries(CHAIR_SPOTS)
+        .map(([id, spot]) => ({ id, ...spot, distance: Math.hypot(player.position.x - spot.x, player.position.z - spot.z) }))
+        .sort((a, b) => a.distance - b.distance)[0];
+      if (!nearestChair || nearestChair.distance > 2.3) return callback?.({ ok: false, error: 'Walk closer to an upstairs chair first.' });
+    }
     const previousAction = player.action;
     const previousBed = player.bedId ? BED_SPOTS[player.bedId] : null;
+    const previousChair = player.chairId ? CHAIR_SPOTS[player.chairId] : null;
     player.action = nextAction;
     player.moving = false;
     player.bedId = null;
-    if (nextAction === 'sleep' && nearestBed) {
+    player.chairId = null;
+    if (nextAction === 'sit' && nearestChair) {
+      player.chairId = nearestChair.id;
+      player.position = { x: nearestChair.x, y: nearestChair.y, z: nearestChair.z };
+      player.rotationY = Math.PI;
+    } else if (previousAction === 'sit' && nextAction === 'none' && previousChair) {
+      player.position = { x: previousChair.exitX, y: previousChair.y, z: previousChair.exitZ };
+      player.rotationY = Math.PI / 2;
+    } else if (nextAction === 'sleep' && nearestBed) {
       player.bedId = nearestBed.id;
       player.position = { x: nearestBed.x, y: 0, z: nearestBed.z };
       player.rotationY = 0;
     } else if (previousAction === 'sleep' && nextAction === 'none' && previousBed) {
-      // Wake at the foot of the bed, outside the mattress collision area.
       player.position = { x: previousBed.x, y: 0, z: previousBed.z + 2.25 };
       player.rotationY = Math.PI;
     } else if (nextAction === 'dance') {
@@ -398,7 +415,23 @@ io.on('connection', (socket) => {
     callback?.({ ok: true, action: player.action, danceStyle: player.danceStyle, position: player.position, players: publicPlayers(room) });
   });
 
-  socket.on('floor:travel', (_payload = {}, callback) => {\n    const roomId=socket.data.roomId, room=roomId&&getRoom(roomId), player=room?.players.get(socket.id);\n    if(!room||!player) return callback?.({ok:false,error:'Join a penthouse first.'});\n    if(player.zone!=='penthouse'||player.vehicleId) return callback?.({ok:false,error:'The upstairs staircase is inside the penthouse.'});\n    if(Math.hypot(player.position.x,player.position.z-1.0)>4.2) return callback?.({ok:false,error:'Walk to the central staircase first.'});\n    player.position={x:0,y:(Number(player.position.y)||0)>1.5?0:3.36,z:1.0}; player.action='none'; player.bedId=null; player.chairId=null; player.moving=false;\n    io.to(roomId).emit('room:players',publicPlayers(room));\n    callback?.({ok:true,position:player.position,players:publicPlayers(room)});\n  });\n\n  socket.on('chat:send', ({ text } = {}, callback) => {
+  socket.on('floor:travel', (_payload = {}, callback) => {
+    const roomId = socket.data.roomId;
+    const room = roomId && getRoom(roomId);
+    const player = room?.players.get(socket.id);
+    if (!room || !player) return callback?.({ ok: false, error: 'Join a penthouse first.' });
+    if (player.zone !== 'penthouse' || player.vehicleId) return callback?.({ ok: false, error: 'The upstairs staircase is inside the penthouse.' });
+    if (Math.hypot(player.position.x, player.position.z - 1.0) > 4.2) return callback?.({ ok: false, error: 'Walk to the central staircase first.' });
+    player.position = { x: 0, y: (Number(player.position.y) || 0) > 1.5 ? 0 : 3.36, z: 1.0 };
+    player.action = 'none';
+    player.bedId = null;
+    player.chairId = null;
+    player.moving = false;
+    io.to(roomId).emit('room:players', publicPlayers(room));
+    callback?.({ ok: true, position: player.position, players: publicPlayers(room) });
+  });
+
+  socket.on('chat:send', ({ text } = {}, callback) => {
     const roomId = socket.data.roomId;
     const room = roomId && getRoom(roomId);
     const player = room?.players.get(socket.id);
