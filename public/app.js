@@ -1350,6 +1350,20 @@ function initializeWorld() {
   frontGlow.position.set(0, 3.8, 4); scene.add(frontGlow);
   const colliders = [];
   createHouseScene(scene, colliders);
+  const roomAmbience = {
+    penthouse: { sky: 0x9bb1c4, glow: 0xd98d91, sun: 0xffddc2 },
+    music: { sky: 0x7189a8, glow: 0x9b79d1, sun: 0xb7c8ff },
+    cozy: { sky: 0xb9a49b, glow: 0xe4a28f, sun: 0xffd7b8 },
+    game: { sky: 0x778fa4, glow: 0x7ec6bd, sun: 0xc1e4ff },
+    garden: { sky: 0x8eae9a, glow: 0x7ab98b, sun: 0xffe3b1 },
+    cinema: { sky: 0x34364e, glow: 0x9474c9, sun: 0x9a9bc4 }
+  }[activeRoomType] || null;
+  if (roomAmbience) {
+    scene.background.setHex(roomAmbience.sky);
+    scene.fog.color.setHex(roomAmbience.sky);
+    backGlow.color.setHex(roomAmbience.glow);
+    sun.color.setHex(roomAmbience.sun);
+  }
 
   const playerObjects = new Map();
   const vehicleObjects = new Map();
