@@ -2014,8 +2014,9 @@ function animateWorld() {
         : { minX: -8.55, maxX: 21.2, minZ: -8.05, maxZ: 8.05 };
       const nextX = THREE.MathUtils.clamp(local.position.x + stepX, bounds.minX, bounds.maxX);
       const nextZ = THREE.MathUtils.clamp(local.position.z + stepZ, bounds.minZ, bounds.maxZ);
-      if (!isHouseWallBlocked(nextX, local.position.z, world.colliders)) local.position.x = nextX;
-      if (!isHouseWallBlocked(local.position.x, nextZ, world.colliders)) local.position.z = nextZ;
+      const activeColliders = local.position.y > 1.5 ? [] : world.colliders;
+      if (!isHouseWallBlocked(nextX, local.position.z, activeColliders)) local.position.x = nextX;
+      if (!isHouseWallBlocked(local.position.x, nextZ, activeColliders)) local.position.z = nextZ;
       local.rotation.y = Math.atan2(dx, dz);
       localMoving = Math.hypot(local.position.x - beforeX, local.position.z - beforeZ) > .0001;
     }
