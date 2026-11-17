@@ -7,6 +7,12 @@ const path = require('path');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
+  // Preserve room membership and missed packets during short network drops.
+  // The browser also has a fallback rejoin path when recovery is unavailable.
+  connectionStateRecovery: {
+    maxDisconnectionDuration: 2 * 60 * 1000,
+    skipMiddlewares: true
+  },
   maxHttpBufferSize: 1e5,
   pingInterval: 25000,
   pingTimeout: 20000
