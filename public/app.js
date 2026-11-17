@@ -208,7 +208,6 @@ function enterRoom(response) {
   currentZone = players.find((player) => player.id === selfId)?.zone || 'penthouse';
   $('lobby').classList.add('hidden');
   $('game').classList.remove('hidden');
-  setupMobileControls();
 
   $('topStatus').textContent = 'You are home';
   $('activeRoomName').textContent = ROOM_TYPES[activeRoomType].name;
@@ -217,8 +216,11 @@ function enterRoom(response) {
   url.searchParams.set('room', activeRoomId);
   history.replaceState({}, '', url.toString());
   updateResidentAvatars();
-  // Keep the existing 3D scene alive when restoring a room after reconnect.
-  if (!world) initializeWorld();
+  // Avoid duplicate mobile-control listeners when restoring an existing scene.
+  if (!world) {
+    setupMobileControls();
+    initializeWorld();
+  }
   updatePlayers(players);
   updateVehicles(vehicles);
   renderChatHistory(response.chat || []);
