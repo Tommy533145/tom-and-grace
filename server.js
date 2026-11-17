@@ -374,6 +374,8 @@ io.on('connection', (socket) => {
         .sort((a, b) => a.distance - b.distance)[0];
       if (!nearestBed || nearestBed.distance > 3.5) return callback?.({ ok: false, error: 'Walk closer to a bedroom bed first.' });
     }
+    const previousAction = player.action;
+    const previousBed = player.bedId ? BED_SPOTS[player.bedId] : null;
     player.action = nextAction;
     player.moving = false;
     player.bedId = null;
@@ -381,6 +383,10 @@ io.on('connection', (socket) => {
       player.bedId = nearestBed.id;
       player.position = { x: nearestBed.x, z: nearestBed.z };
       player.rotationY = 0;
+    } else if (previousAction === 'sleep' && nextAction === 'none' && previousBed) {
+      // Wake at the foot of the bed, outside the mattress collision area.
+      player.position = { x: previousBed.x, z: previousBed.z + 2.25 };
+      player.rotationY = Math.PI;
     } else if (nextAction === 'dance') {
       player.danceStyle = DANCE_STYLES.has(danceStyle) ? danceStyle : 'groove';
     }
