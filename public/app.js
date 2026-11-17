@@ -415,7 +415,8 @@ function ensureVoicePeer(peerId) {
     makingOffer: false,
     ignoreOffer: false,
     isSettingRemoteAnswerPending: false,
-    pendingCandidates: []
+    pendingCandidates: [],
+    restartRequested: false
   };
   voicePeers.set(peerId, state);
   if (localVoiceStream) {
@@ -441,19 +442,48 @@ function ensureVoicePeer(peerId) {
       audio = document.createElement('audio');
       audio.autoplay = true;
       audio.playsInline = true;
+      audio.setAttribute('autoplay', '');
+      audio.setAttribute('playsinline', '');
       audio.volume = 0;
+      audio.muted = false;
       audio.setAttribute('aria-label', 'Nearby player voice');
       $('voiceAudioContainer').appendChild(audio);
       remoteAudioElements.set(peerId, audio);
     }
     const stream = event.streams?.[0] || new MediaStream([event.track]);
     if (audio.srcObject !== stream) audio.srcObject = stream;
-    audio.play().catch(() => {
-      $('voiceProximity').textContent = 'Allow audio playback in your browser to hear nearby players.';
+    audio.play().catch((error) => {
+      console.warn('Remote voice playback was blocked:', error);
+      $('voiceProximity').textContent = 'Tap Join voice again or allow sound playback to hear other players.';
     });
   };
+  pc.oniceconnectionstatechange = () => {
+    if (pc.iceConnectionState === 'failed' && !state.restartRequested) {
+      state.restartRequested = true;
+      try {
+        pc.restartIce();
+        $('voiceProximity').textContent = 'Reconnecting voice…';
+      } catch (error) {
+        console.warn('Voice ICE restart failed:', error);
+      }
+    }
+    if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+      state.restartRequested = false;
+      $('voiceProximity').textContent = 'Voice connected. Audio fades with distance.';
+    }
+  };
   pc.onconnectionstatechange = () => {
-    if (['failed', 'closed'].includes(pc.connectionState)) closeVoicePeer(peerId);
+    if (pc.connectionState === 'failed') {
+      $('voiceProximity').textContent = 'Voice network connection failed. Check your network and microphone permissions, then rejoin voice.';
+      if (!state.restartRequested) {
+        state.restartRequested = true;
+        try { pc.restartIce(); } catch (error) { console.warn('Voice connection restart failed:', error); }
+      }
+    } else if (pc.connectionState === 'connected') {
+      state.restartRequested = false;
+    } else if (pc.connectionState === 'closed') {
+      closeVoicePeer(peerId);
+    }
   };
   return state;
 }
@@ -491,11 +521,21 @@ async function joinVoiceChat() {
     return;
   }
   try {
-    if (!localVoiceStream) {
+    if (!localVoiceStream || !localVoiceStream.getAudioTracks().some((track) => track.readyState === 'live')) {
+      if (localVoiceStream) localVoiceStream.getTracks().forEach((track) => track.stop());
       localVoiceStream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        audio: {
+          echoCancellation: { ideal: true },
+          noiseSuppression: { ideal: true },
+          autoGainControl: { ideal: true },
+          channelCount: { ideal: 1 }
+        },
         video: false
       });
+    }
+    const microphoneTrack = localVoiceStream.getAudioTracks()[0];
+    if (!microphoneTrack || microphoneTrack.readyState !== 'live') {
+      throw new Error('No active microphone track was found. Check your input device.');
     }
     voiceJoined = true;
     voiceMuted = false;
@@ -509,15 +549,32 @@ async function joinVoiceChat() {
     $('voiceProximity').textContent = 'Voice is on. Audio fades as players move farther away.';
     showToast('Nearby voice chat is on. Say hello!');
   } catch (error) {
-    showToast(error?.name === 'NotAllowedError' ? 'Allow microphone access to join voice.' : 'Could not start voice chat. Check your microphone.');
-    $('voiceProximity').textContent = error?.message || 'Microphone access was unavailable.';
+    const messages = {
+      NotAllowedError: 'Microphone permission is blocked. Allow microphone access in your browser or phone settings.',
+      NotFoundError: 'No microphone was found. Connect or enable a microphone and try again.',
+      NotReadableError: 'Your microphone is busy in another app. Close other apps using it and retry.',
+      OverconstrainedError: 'The selected microphone cannot use the requested audio settings. Try another input device.',
+      SecurityError: 'Microphone access requires HTTPS. Open Tom&Grace using its secure website address.'
+    };
+    console.warn('Could not join Tom&Grace voice:', error);
+    showToast(messages[error?.name] || 'Could not start voice chat. Check your microphone and browser permissions.');
+    $('voiceProximity').textContent = messages[error?.name] || error?.message || 'Microphone access was unavailable.';
+    if (localVoiceStream && !localVoiceStream.getAudioTracks().some((track) => track.readyState === 'live')) {
+      localVoiceStream.getTracks().forEach((track) => track.stop());
+      localVoiceStream = null;
+    }
   }
 }
 
 function muteVoiceMic(nextMuted = !voiceMuted) {
   if (!voiceJoined || !localVoiceStream) return;
   voiceMuted = Boolean(nextMuted);
-  localVoiceStream.getAudioTracks().forEach((track) => { track.enabled = !voiceMuted; });
+  const tracks = localVoiceStream.getAudioTracks().filter((track) => track.readyState === 'live');
+  tracks.forEach((track) => { track.enabled = !voiceMuted; });
+  if (!tracks.length && !voiceMuted) {
+    showToast('Your microphone is disconnected. Leave voice and join again after checking your mic.');
+    return;
+  }
   socket.emit('voice:status', { joined: true, muted: voiceMuted });
   renderVoiceControls();
   $('voiceProximity').textContent = voiceMuted ? 'Your microphone is muted. You can still hear nearby players.' : 'Your microphone is live. Audio is proximity-based.';
