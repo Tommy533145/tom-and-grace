@@ -63,9 +63,25 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   assert.equal(roomResponse?.ok, true, 'room creation');
   assert.equal(roomResponse?.roomType, 'penthouse', 'the only supported room type is the penthouse');
   let joinResponse;
-  b.clientEmit('room:join', { roomId: roomResponse.roomId, profile: { name: 'Grace', character: 'grace' } }, (response) => { joinResponse = response; });
+  b.clientEmit('room:join', { roomId: roomResponse.roomId, profile: { clientId: 'grace-tab-identity', name: 'Grace', character: 'grace' } }, (response) => { joinResponse = response; });
   assert.equal(joinResponse?.ok, true, 'second player joins');
   assert.equal(joinResponse.players.length, 2, 'both players are in the room');
+
+  // A transport disconnect should retain the player briefly; a fresh socket
+  // with the same per-tab clientId must reclaim the same player state.
+  a.data.roomId = roomResponse.roomId;
+  const firstPlayer = joinResponse.players.find((player) => player.id === 'player-B');
+  b.clientEmit('player:move', { x: 4.25, z: -2.5, rotationY: 1.2, moving: false });
+  b.clientEmit('disconnect');
+  const resumed = io.connect('player-B-reconnected');
+  let resumeResponse;
+  resumed.clientEmit('room:join', { roomId: roomResponse.roomId, profile: { clientId: 'grace-tab-identity', name: 'Grace', character: 'grace' } }, (response) => { resumeResponse = response; });
+  assert.equal(resumeResponse?.ok, true, 'disconnected player can reclaim the same room');
+  assert.equal(resumeResponse.players.filter((player) => player.name === 'Grace').length, 1, 'reconnect does not leave a duplicate player');
+  assert.equal(resumeResponse.players.find((player) => player.id === 'player-B-reconnected')?.position.x, 4.25, 'reconnect preserves the previous player position');
+  let roomSyncResponse;
+  resumed.clientEmit('room:sync', {}, (response) => { roomSyncResponse = response; });
+  assert.equal(roomSyncResponse?.ok, true, 'recovered socket can resync the complete room state');
   assert.deepEqual(joinResponse.musicQueue, [], 'new rooms start with an empty shared music queue');
 
   let firstMusicAdd;
