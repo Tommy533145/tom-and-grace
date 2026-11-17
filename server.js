@@ -259,7 +259,7 @@ io.on('connection', (socket) => {
     const rotationY = Number(position.rotationY);
     if (!Number.isFinite(x) || !Number.isFinite(z)) return;
     const bounds = player.zone === 'city'
-      ? { minX: 27.2, maxX: 68.0, minZ: -17.2, maxZ: 17.2 }
+      ? { minX: 27.2, maxX: 92.0, minZ: -26.2, maxZ: 26.2 }
       : { minX: -8.55, maxX: 21.2, minZ: -8.2, maxZ: 8.2 };
     player.position = {
       x: Math.max(bounds.minX, Math.min(bounds.maxX, x)),
