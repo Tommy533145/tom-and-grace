@@ -22,6 +22,11 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+      - name: Check server JavaScript syntax
+        run: node --check server.js
+      - name: Check browser JavaScript syntax
+        shell: bash
+        run: node --input-type=module --check < public/app.js
       - name: Run multiplayer smoke tests
         run: npm run test:smoke
       - name: Build Windows installer
