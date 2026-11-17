@@ -15,7 +15,7 @@ function expressStub() {
 expressStub.static = () => (_req, _res, next) => next?.();
 
 class FakeIO {
-  constructor(options = {}) { this.options = options; this.handlers = {}; this.clients = new Map(); ioInstance = this; }
+  constructor(_server, options = {}) { this.options = options; this.handlers = {}; this.clients = new Map(); ioInstance = this; }
   on(event, fn) { this.handlers[event] = fn; }
   to(roomOrId) {
     return { emit: (event, payload) => {
