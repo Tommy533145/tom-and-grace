@@ -180,10 +180,12 @@ function joinRoom(socket, roomId, profile, callback) {
       youtube: { videoId: '', isPlaying: false, currentTime: 0, updatedAt: Date.now() },
       musicQueue: [],
       musicIndex: -1,
-      roomType: ROOM_TYPES.has(profile?.roomType) ? profile.roomType : 'penthouse'
+      roomType: 'penthouse'
     };
     rooms.set(roomId, room);
   }
+
+  room.roomType = 'penthouse';
 
   if (room.players.size >= MAX_PLAYERS_PER_ROOM) {
     return callback?.({ ok: false, error: `This penthouse is full (${MAX_PLAYERS_PER_ROOM} players maximum).` });
