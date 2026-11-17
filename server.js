@@ -469,14 +469,25 @@ io.on('connection', (socket) => {
     if (typeof videoId !== 'string' || !/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
       return callback?.({ ok: false, error: 'Paste a valid YouTube video link or ID.' });
     }
-    // The shared YouTube panel is intentionally a simple one-link/one-Share
-    // experience. Replace the current room video instead of silently appending
-    // tracks to a hidden queue that players cannot see or control.
-    room.musicQueue = [{
-      id: crypto.randomBytes(5).toString('hex'),
-      videoId,
-      addedBy: player.name
-    }];
+    const wasEmpty = room.musicQueue.length === 0;
+    room.musicQueue.push({ id: crypto.randomBytes(5).toString('hex'), videoId, addedBy: player.name });
+    if (wasEmpty) playQueuedTrack(roomId, room, 0);
+    else broadcastMusicQueue(roomId, room);
+    callback?.({ ok: true, queue: publicMusicQueue(room) });
+  });
+
+  socket.on('music:queue:replace', ({ videoIds } = {}, callback) => {
+    const roomId = socket.data.roomId;
+    const room = roomId && getRoom(roomId);
+    const player = room?.players.get(socket.id);
+    if (!room || !player) return callback?.({ ok: false, error: 'Join a room before sharing a playlist.' });
+    if (!Array.isArray(videoIds) || videoIds.length < 1 || videoIds.length > 100 ||
+        videoIds.some((id) => typeof id !== 'string' || !/^[a-zA-Z0-9_-]{11}$/.test(id))) {
+      return callback?.({ ok: false, error: 'Playlist must contain 1 to 100 valid YouTube video IDs.' });
+    }
+    room.musicQueue = videoIds.map((videoId) => ({
+      id: crypto.randomBytes(5).toString('hex'), videoId, addedBy: player.name
+    }));
     room.musicIndex = 0;
     playQueuedTrack(roomId, room, 0);
     callback?.({ ok: true, queue: publicMusicQueue(room) });
