@@ -1157,25 +1157,18 @@ function createHouseScene(scene, colliders) {
     ...(activeRoomType === 'music' || activeRoomType === 'garden' ? [] : [
       { minX: -6.75, maxX: -3.65, minZ: 5.62, maxZ: 6.72 }, // living sofa
       { minX: -6.85, maxX: -3.45, minZ: .30, maxZ: 1.12 }, // TV console
-      { minX: -6.0, maxX: -4.0, minZ: 3.38, maxZ: 4.52 } // coffee table
+      { minX: -6.0, maxX: -4.0, minZ: 3.38, maxZ: 4.52 }, // coffee table
+      { minX: -8.65, maxX: -8.0, minZ: 2.35, maxZ: 4.35 } // bookcase
     ]),
-    ...(activeRoomType === 'game' ? [] : [
-      { minX: 2.72, maxX: 5.42, minZ: -6.95, maxZ: -3.35 } // bedroom two bed
-    ]));
-  /* Additional theme-specific furniture collision is registered below. */
-  colliders.push(
-    ...(activeRoomType === 'game' ? [] : [
-      { minX: 2.72, maxX: 5.42, minZ: -6.95, maxZ: -3.35 }
-    ]),
-    { minX: -8.65, maxX: -8.0, minZ: 2.35, maxZ: 4.35 }, // bookcase
-    { minX: -8.65, maxX: -8.0, minZ: 2.35, maxZ: 4.35 }, // bookcase
     { minX: 1.62, maxX: 2.7, minZ: 1.55, maxZ: 2.75 }, // fridge
     { minX: 3.48, maxX: 6.02, minZ: 3.62, maxZ: 4.98 }, // kitchen island
     { minX: 3.42, maxX: 6.18, minZ: 5.78, maxZ: 7.34 }, // dining table
     { minX: -6.62, maxX: -3.68, minZ: -6.98, maxZ: -3.38 }, // bedroom one bed
     { minX: -8.62, maxX: -7.68, minZ: -4.25, maxZ: -2.05 }, // bedroom one wardrobe
-    { minX: 2.72, maxX: 5.42, minZ: -6.95, maxZ: -3.35 }, // bedroom two bed
-    { minX: 1.68, maxX: 2.35, minZ: -3.35, maxZ: -1.45 }, // bedroom two wardrobe
+    ...(activeRoomType === 'game' ? [] : [
+      { minX: 2.72, maxX: 5.42, minZ: -6.95, maxZ: -3.35 }, // bedroom two bed
+      { minX: 1.68, maxX: 2.35, minZ: -3.35, maxZ: -1.45 } // bedroom two wardrobe
+    ]),
     { minX: 6.82, maxX: 8.5, minZ: -7.72, maxZ: -5.15 }, // bathtub
     { minX: 6.25, maxX: 7.25, minZ: -2.95, maxZ: -1.5 }, // bathroom vanity
     { minX: 7.55, maxX: 8.45, minZ: -4.5, maxZ: -3.35 } // toilet
