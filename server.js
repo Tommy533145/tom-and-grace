@@ -327,6 +327,7 @@ io.on('connection', (socket) => {
       : { minX: -8.55, maxX: 21.2, minZ: -8.2, maxZ: 8.2 };
     player.position = {
       x: Math.max(bounds.minX, Math.min(bounds.maxX, x)),
+      y: player.zone === 'city' ? 0 : (Number(position.y) >= 1.5 ? 3.36 : 0),
       z: Math.max(bounds.minZ, Math.min(bounds.maxZ, z))
     };
     player.rotationY = Number.isFinite(rotationY) ? Math.max(-Math.PI * 8, Math.min(Math.PI * 8, rotationY)) : (player.rotationY || 0);
@@ -334,6 +335,7 @@ io.on('connection', (socket) => {
     const activityWasActive = player.action && player.action !== 'none';
     player.action = 'none';
     player.bedId = null;
+    player.chairId = null;
     socket.to(roomId).emit('player:move', {
       id: socket.id,
       position: player.position,
