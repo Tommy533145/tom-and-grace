@@ -1419,7 +1419,8 @@ function createHouseScene(scene, colliders) {
     { x: 50.3, z: 13.0, w: 4.3, d: 5.1, h: 8.3, c: 0x82766d }
   ];
   cityBuildings.forEach((b, index) => {
-    addBox(scene, `city-building-${index}`, [b.w, b.h, b.d], [b.x, b.h / 2 - .12, b.z], b.c, { roughness: .72 });
+    const buildingMesh = addBox(scene, `city-building-${index}`, [b.w, b.h, b.d], [b.x, b.h / 2 - .12, b.z], b.c, { roughness: .72 });
+    registerBuildingOccluder(buildingMesh);
     const frontZ = b.z < 0 ? b.z + b.d / 2 + .035 : b.z - b.d / 2 - .035;
     const windowMaterial = new THREE.MeshStandardMaterial({ color: 0xf4dcae, emissive: 0xb88752, emissiveIntensity: .5, roughness: .35 });
     for (let row = 0; row < Math.floor((b.h - 2) / 1.7); row++) {
@@ -1451,7 +1452,8 @@ function createHouseScene(scene, colliders) {
   // New city blocks: apartment towers, hotel, office, shopping arcade and parking.
   const outerBlocks=[{x:57,z:-20.8,w:5.6,d:6,h:15.5,c:0x536b7c,kind:'RESIDENCES'},{x:65,z:-20.8,w:6.2,d:6,h:20,c:0x6d687a,kind:'CITY HOTEL'},{x:74,z:-20.8,w:6.4,d:6,h:17,c:0x687d79,kind:'OFFICES'},{x:83,z:-20.8,w:6,d:6,h:13.5,c:0x827267,kind:'SHOPPING ARCADE'},{x:58,z:20.8,w:6,d:6,h:12.5,c:0x776a72,kind:'APARTMENTS'},{x:67,z:20.8,w:6.5,d:6,h:18.5,c:0x5f7188,kind:'BUSINESS TOWER'},{x:76,z:20.8,w:6.4,d:6,h:15,c:0x7c7c70,kind:'CITY MARKET'},{x:85,z:20.8,w:5.8,d:6,h:11.5,c:0x657b78,kind:'PARKING'}];
   outerBlocks.forEach((b,index)=>{
-    addBox(scene,`outer-city-building-${index}`,[b.w,b.h,b.d],[b.x,b.h/2-.12,b.z],b.c,{roughness:.62,metalness:.12});
+    const buildingMesh=addBox(scene,`outer-city-building-${index}`,[b.w,b.h,b.d],[b.x,b.h/2-.12,b.z],b.c,{roughness:.62,metalness:.12});
+    registerBuildingOccluder(buildingMesh);
     const frontZ=b.z<0?b.z+b.d/2+.045:b.z-b.d/2-.045;
     const glass=new THREE.MeshStandardMaterial({color:0xb9d7df,emissive:0x526f80,emissiveIntensity:.28,metalness:.28,roughness:.22});
     const floors=Math.floor((b.h-1.8)/2),windows=Math.max(3,Math.floor((b.w-.8)/1.05));
@@ -1517,6 +1519,42 @@ if(p.n){const count=p.n,positions=new Float32Array(count*3),velocities=new Float
 if(announce){const names={clear:'Clear day',sunset:'Golden sunset',night:'Night',rain:'Rain',storm:'Thunderstorm',snow:'Snow',fog:'Fog'};showToast('Weather changed: '+names[kind]);}}
 function updateWeather(delta,now){const w=world?.weather;if(!w)return;const center=world.cameraTarget;for(let i=0;i<w.count;i++){const j=i*3;w.positions[j]+=w.velocities[j]*delta;w.positions[j+1]-=w.velocities[j+1]*delta;w.positions[j+2]+=w.velocities[j+2]*delta;if(w.positions[j+1]<0){w.positions[j]=center.x+(Math.random()-.5)*70;w.positions[j+1]=18+Math.random()*12;w.positions[j+2]=center.z+(Math.random()-.5)*60;}if(w.kind==='snow')w.positions[j]+=Math.sin(now*.0005+i)*delta*.18;}w.points.geometry.attributes.position.needsUpdate=true;if(w.kind==='storm'&&Math.random()<.0015){world.sunLight.intensity=2.2;world.lightningUntil=now+100;}if(world.lightningUntil&&now>world.lightningUntil){world.sunLight.intensity=WEATHER_PRESETS.storm.power;world.lightningUntil=0;}}
 
+
+function registerBuildingOccluder(mesh) {
+  if (!mesh?.material) return;
+  // Clone so fading one facade never changes another mesh sharing its material.
+  mesh.material = mesh.material.clone();
+  mesh.material.transparent = true;
+  mesh.material.depthWrite = true;
+  mesh.userData.buildingOccluder = true;
+  mesh.userData.targetOpacity = 1;
+}
+
+function updateBuildingOcclusion() {
+  if (!world) return;
+  const local = world.playerObjects.get(selfId);
+  const blockers = world.buildingOccluders || [];
+  if (!local || !blockers.length) return;
+  const target = local.position.clone();
+  target.y += 1.05;
+  const origin = world.camera.position;
+  const direction = target.clone().sub(origin);
+  const distance = direction.length();
+  direction.normalize();
+  world.occlusionRaycaster ||= new THREE.Raycaster();
+  world.occlusionRaycaster.set(origin, direction);
+  const hits = world.occlusionRaycaster.intersectObjects(blockers, false);
+  const fading = new Set(hits.filter((hit) => hit.distance < distance - .65).map((hit) => hit.object));
+  const fadeTo = .2;
+  const step = .12;
+  blockers.forEach((mesh) => {
+    const material = mesh.material;
+    const desired = fading.has(mesh) ? fadeTo : 1;
+    material.opacity = THREE.MathUtils.damp(material.opacity ?? 1, desired, 10, 1 / 60);
+    material.transparent = material.opacity < .995;
+    material.depthWrite = material.opacity > .55;
+  });
+}
 
 function createCityPedestrian(scene,index,x,z,direction){
  const npc=new THREE.Group();npc.position.set(x,0,z);npc.rotation.y=direction>0?Math.PI/2:-Math.PI/2;
@@ -1612,7 +1650,8 @@ function initializeWorld() {
   const vehicleObjects = new Map();
   const cameraTarget = new THREE.Vector3(5.2, .55, 0);
   const cameraSpherical = new THREE.Spherical().setFromVector3(camera.position.clone().sub(cameraTarget));
-  world = { scene, camera, renderer, playerObjects, vehicleObjects, container, colliders, cameraTarget, cameraSpherical, sunLight: sun, hemiLight: hemi, backGlow, frontGlow, lastFrame: performance.now(), lastRenderAt: 0, renderProfile, localMoving: false, weather: null, weatherKind: 'clear', trafficCars: [], cityPedestrians: [], cityMissionPickups: [] };
+  world = { scene, camera, renderer, playerObjects, vehicleObjects, container, colliders, cameraTarget, cameraSpherical, sunLight: sun, hemiLight: hemi, backGlow, frontGlow, lastFrame: performance.now(), lastRenderAt: 0, renderProfile, localMoving: false, weather: null, weatherKind: 'clear', trafficCars: [], cityPedestrians: [], cityMissionPickups: [], buildingOccluders: [] };
+  world.buildingOccluders = scene.children.filter((object) => object.userData?.buildingOccluder);
   world.trafficCars=createCityTraffic(scene);
   world.cityPedestrians=Array.from({length:9},(_,i)=>createCityPedestrian(scene,i,37+i*5.8,i%2?-5.5:5.5,i%2?1:-1));
   world.cityMissionPickups=createCityMissionPickups(scene);
@@ -1895,6 +1934,7 @@ function animateWorld() {
     }
   }
 
+  updateBuildingOcclusion();
   updateWeather(delta, now);
   updateCityAmbient(delta,now);
   updateCityMission();
