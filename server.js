@@ -49,7 +49,7 @@ app.get('/api/regions', (req, res) => {
 app.get('/health', (_req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Cache-Control', 'no-store');
-  res.json({ ok: true, app: 'Tom&Grace', edition: 'Shared Music Room 1.5', region: REGION_ID, maxPlayersPerRoom: MAX_PLAYERS_PER_ROOM, features: ['room-chat', 'proximity-voice', 'elevator-city', 'synchronized-movement', 'sleep', 'dance', 'shared-music-queue', 'spotify-personal-embed', 'regional-discovery'] });
+  res.json({ ok: true, app: 'Tom&Grace', edition: 'Shared Music Room 1.5', region: REGION_ID, maxPlayersPerRoom: MAX_PLAYERS_PER_ROOM, features: ['room-chat', 'proximity-voice', 'elevator-city', 'expanded-city-mall', 'virtual-mart-shopping', 'selectable-room-themes', 'synchronized-movement', 'sleep', 'dance', 'shared-music-queue', 'spotify-personal-embed', 'regional-discovery'] });
 });
 
 function cleanText(value, fallback = '', max = 20) {
