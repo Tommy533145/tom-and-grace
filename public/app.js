@@ -1760,6 +1760,7 @@ function initializeWorld() {
   frontGlow.position.set(0, 3.8, 4); scene.add(frontGlow);
   const colliders = [];
   createHouseScene(scene, colliders);
+  const houseColliderCount = colliders.length;
   const roomAmbience = {
     penthouse: { sky: 0x9bb1c4, glow: 0xd98d91, sun: 0xffddc2 },
     music: { sky: 0x7189a8, glow: 0x9b79d1, sun: 0xb7c8ff },
@@ -1779,7 +1780,7 @@ function initializeWorld() {
   const vehicleObjects = new Map();
   const cameraTarget = new THREE.Vector3(5.2, .55, 0);
   const cameraSpherical = new THREE.Spherical().setFromVector3(camera.position.clone().sub(cameraTarget));
-  world = { scene, camera, renderer, playerObjects, vehicleObjects, container, colliders, cameraTarget, cameraSpherical, sunLight: sun, hemiLight: hemi, backGlow, frontGlow, lastFrame: performance.now(), lastRenderAt: 0, renderProfile, localMoving: false, weather: null, weatherKind: 'clear', trafficCars: [], cityPedestrians: [], cityMissionPickups: [], buildingOccluders: [] };
+  world = { scene, camera, renderer, playerObjects, vehicleObjects, container, colliders, houseColliderCount, cameraTarget, cameraSpherical, sunLight: sun, hemiLight: hemi, backGlow, frontGlow, lastFrame: performance.now(), lastRenderAt: 0, renderProfile, localMoving: false, weather: null, weatherKind: 'clear', trafficCars: [], cityPedestrians: [], cityMissionPickups: [], buildingOccluders: [] };
   world.buildingOccluders = scene.children.filter((object) => object.userData?.buildingOccluder);
   world.trafficCars=createCityTraffic(scene);
   world.cityPedestrians=Array.from({length:9},(_,i)=>createCityPedestrian(scene,i,37+i*5.8,i%2?-5.5:5.5,i%2?1:-1));
@@ -2006,7 +2007,7 @@ function animateWorld() {
         const speed = throttle > 0 ? 6.1 : 3.1;
         car.position.x += Math.sin(car.rotation.y) * speed * throttle * delta;
         car.position.z += Math.cos(car.rotation.y) * speed * throttle * delta;
-        if(currentZone==='city'){car.position.x=THREE.MathUtils.clamp(car.position.x,30,87);car.position.z=THREE.MathUtils.clamp(car.position.z,-2.55,2.55);}else{car.position.x=THREE.MathUtils.clamp(car.position.x,10.15,20.95);car.position.z=THREE.MathUtils.clamp(car.position.z,-7.55,7.55);}
+        if(currentZone==='city'){car.position.x=THREE.MathUtils.clamp(car.position.x,-90,210);car.position.z=THREE.MathUtils.clamp(car.position.z,-130,130);}else{car.position.x=THREE.MathUtils.clamp(car.position.x,-8.5,24.2);car.position.z=THREE.MathUtils.clamp(car.position.z,-7.7,7.7);}
         car.userData.wheels?.forEach((wheel) => { wheel.rotation.x -= throttle * delta * 8; });
       }
       const moved = Math.abs(car.position.x - beforeX) > .0001 || Math.abs(car.position.z - beforeZ) > .0001;
@@ -2051,7 +2052,7 @@ function animateWorld() {
           : { minX: -8.55, maxX: 24.35, minZ: -8.05, maxZ: 8.05 };
       const nextX = THREE.MathUtils.clamp(local.position.x + stepX, bounds.minX, bounds.maxX);
       const nextZ = THREE.MathUtils.clamp(local.position.z + stepZ, bounds.minZ, bounds.maxZ);
-      const activeColliders = local.position.y > 1.5 ? [] : world.colliders;
+      const activeColliders = currentZone === 'city' ? world.colliders.slice(world.houseColliderCount) : local.position.y > 1.5 ? [] : world.colliders.slice(0, world.houseColliderCount);
       if (!isHouseWallBlocked(nextX, local.position.z, activeColliders)) local.position.x = nextX;
       if (!isHouseWallBlocked(local.position.x, nextZ, activeColliders)) local.position.z = nextZ;
       local.rotation.y = Math.atan2(dx, dz);
