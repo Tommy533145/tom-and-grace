@@ -107,6 +107,9 @@ let lastYoutubeSyncAt = 0;
 let musicQueue = [];
 let musicIndex = -1;
 let moveKeys = new Set();
+const MOBILE_DEVICE = navigator.maxTouchPoints > 0 || window.matchMedia('(pointer: coarse)').matches ||
+  /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+
 let lastMoveSentAt = 0;
 let lastSentPosition = { x: 0, z: 0 };
 let lastVehicleSentAt = 0;
@@ -195,6 +198,8 @@ function enterRoom(response) {
   currentZone = players.find((player) => player.id === selfId)?.zone || 'penthouse';
   $('lobby').classList.add('hidden');
   $('game').classList.remove('hidden');
+  setupMobileControls();
+
   $('topStatus').textContent = 'You are home';
   $('roomSubtitle').textContent = `${players.length} / 8 in the penthouse`;
   const url = new URL(window.location.href);
@@ -1790,6 +1795,59 @@ function syncWardrobeControls(outfit) {
   $('outfitStyle').value = currentOutfit.style || 'cozy';
   $('outfitColor').value = currentOutfit.color || 'cream';
   $('outfitAccessory').value = currentOutfit.accessory || 'none';
+}
+
+function setupMobileControls() {
+  const controls = $('mobileControls');
+  const joystick = $('mobileJoystick');
+  const thumb = $('joystickThumb');
+  if (!controls || !joystick || !thumb) return;
+  document.body.classList.toggle('mobile-device', MOBILE_DEVICE);
+  controls.classList.toggle('hidden', !MOBILE_DEVICE);
+  if (!MOBILE_DEVICE || joystick.dataset.ready === 'true') return;
+  joystick.dataset.ready = 'true';
+
+  const directions = ['KeyW', 'KeyA', 'KeyS', 'KeyD'];
+  const clearJoystick = () => {
+    directions.forEach((key) => moveKeys.delete(key));
+    thumb.style.transform = 'translate(0, 0)';
+  };
+  const updateJoystick = (event) => {
+    const rect = joystick.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const max = rect.width * .34;
+    let dx = event.clientX - centerX;
+    let dy = event.clientY - centerY;
+    const distance = Math.hypot(dx, dy);
+    if (distance > max) { dx = dx / distance * max; dy = dy / distance * max; }
+    thumb.style.transform = `translate(${dx}px, ${dy}px)`;
+    directions.forEach((key) => moveKeys.delete(key));
+    if (Math.abs(dx) > max * .2) moveKeys.add(dx < 0 ? 'KeyA' : 'KeyD');
+    if (Math.abs(dy) > max * .2) moveKeys.add(dy < 0 ? 'KeyW' : 'KeyS');
+  };
+  joystick.addEventListener('pointerdown', (event) => {
+    event.preventDefault();
+    joystick.setPointerCapture?.(event.pointerId);
+    updateJoystick(event);
+  });
+  joystick.addEventListener('pointermove', (event) => {
+    if (joystick.hasPointerCapture?.(event.pointerId)) updateJoystick(event);
+  });
+  const release = (event) => {
+    if (joystick.hasPointerCapture?.(event.pointerId)) joystick.releasePointerCapture(event.pointerId);
+    clearJoystick();
+  };
+  joystick.addEventListener('pointerup', release);
+  joystick.addEventListener('pointercancel', release);
+  joystick.addEventListener('lostpointercapture', clearJoystick);
+
+  $('mobileInteract')?.addEventListener('click', toggleCar);
+  $('mobileElevator')?.addEventListener('click', travelElevator);
+  $('mobileActivities')?.addEventListener('click', () => {
+    $('wardrobePanel').classList.add('hidden');
+    $('activitiesPanel').classList.toggle('hidden');
+  });
 }
 
 window.addEventListener('keydown', (event) => {
