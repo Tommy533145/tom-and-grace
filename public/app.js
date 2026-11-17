@@ -98,6 +98,8 @@ const ROOM_TYPES = {
 let selectedRoomType = 'penthouse';
 let activeRoomType = 'penthouse';
 let activeRoomId = '';
+let activeProfile = null;
+let isRejoiningRoom = false;
 let selfId = '';
 let players = [];
 let vehicles = [];
@@ -215,7 +217,8 @@ function enterRoom(response) {
   url.searchParams.set('room', activeRoomId);
   history.replaceState({}, '', url.toString());
   updateResidentAvatars();
-  initializeWorld();
+  // Keep the existing 3D scene alive when restoring a room after reconnect.
+  if (!world) initializeWorld();
   updatePlayers(players);
   updateVehicles(vehicles);
   renderChatHistory(response.chat || []);
@@ -230,7 +233,8 @@ function enterRoom(response) {
 }
 
 function createHouse() {
-  socket.emit('room:create', { profile: getProfile(), roomType: 'penthouse' }, (response) => enterRoom(response));
+  activeProfile = getProfile();
+  socket.emit('room:create', { profile: activeProfile, roomType: 'penthouse' }, (response) => enterRoom(response));
 }
 
 function joinHouse(roomId) {
@@ -238,7 +242,8 @@ function joinHouse(roomId) {
     showToast('Paste a house invite link or room code first.');
     return;
   }
-  socket.emit('room:join', { roomId, profile: getProfile() }, (response) => enterRoom(response));
+  activeProfile = getProfile();
+  socket.emit('room:join', { roomId, profile: activeProfile }, (response) => enterRoom(response));
 }
 
 $('enterButton').addEventListener('click', () => {
@@ -260,6 +265,8 @@ $('leaveButton').addEventListener('click', () => {
     world = null;
   }
   activeRoomId = '';
+  activeProfile = null;
+  isRejoiningRoom = false;
   activeRoomType = 'penthouse';
   selfId = '';
   players = [];
@@ -382,9 +389,38 @@ socket.on('youtube:playback', (state) => {
   }
 });
 
+socket.on('disconnect', (reason) => {
+  if (!activeRoomId) return;
+  // Do not leave the room intentionally; Socket.IO may recover the same session.
+  leaveVoiceChat(true);
+  $('topStatus').textContent = 'Connection lost · reconnecting…';
+  console.warn('Tom&Grace multiplayer connection lost:', reason);
+});
+
 socket.on('connect', () => {
-  // Socket.IO reconnects automatically. Active rooms are intentionally not rejoined
-  // silently because the player may have returned to the lobby in another tab.
+  if (!activeRoomId || isRejoiningRoom) return;
+  if (socket.recovered) {
+    $('topStatus').textContent = 'Connection restored';
+    showToast('Connection restored. You are back in your room ♡');
+    return;
+  }
+
+  // If Socket.IO could not recover the old session, rejoin the same invite room.
+  isRejoiningRoom = true;
+  const roomId = activeRoomId;
+  const profile = activeProfile || getProfile();
+  socket.emit('room:join', { roomId, profile }, (response) => {
+    isRejoiningRoom = false;
+    if (!response?.ok) {
+      $('topStatus').textContent = 'Reconnect failed';
+      showToast(response?.error || 'Could not restore your room. Please reload and rejoin.');
+      return;
+    }
+    activeProfile = profile;
+    enterRoom(response);
+    $('topStatus').textContent = 'You are home';
+    showToast('Connection restored. Your room is ready again ♡');
+  });
 });
 
 // ---------------------------- Proximity voice chat ----------------------------
