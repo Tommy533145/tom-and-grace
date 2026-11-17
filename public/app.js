@@ -96,7 +96,9 @@ const ROOM_TYPES = {
   penthouse: { name: 'Penthouse', subtitle: 'City views · Rooftop · Garage', greeting: 'Welcome to the penthouse' },
   music: { name: 'Music Lounge', subtitle: 'Your shared music hangout', greeting: 'Welcome to the Music Lounge' },
   cozy: { name: 'Cozy Retreat', subtitle: 'A relaxed space to unwind', greeting: 'Welcome to the Cozy Retreat' },
-  game: { name: 'Game Night', subtitle: 'A place to meet and play', greeting: 'Welcome to Game Night' }
+  game: { name: 'Game Night', subtitle: 'A place to meet and play', greeting: 'Welcome to Game Night' },
+  garden: { name: 'Garden Villa', subtitle: 'Greenery · Garden terrace · Relaxing', greeting: 'Welcome to the Garden Villa' },
+  cinema: { name: 'Cinema Room', subtitle: 'Movie nights · Big screen · Lounge', greeting: 'Welcome to the Cinema Room' }
 };
 let selectedRoomType = 'penthouse';
 let activeRoomType = 'penthouse';
@@ -224,7 +226,7 @@ function enterRoom(response) {
   setupMobileControls();
 
   $('topStatus').textContent = 'You are home';
-  $('activeRoomName').textContent = activeRoomType === 'penthouse' ? 'Our Penthouse' : ROOM_TYPES[activeRoomType].name;
+  $('activeRoomName').textContent = ROOM_TYPES[activeRoomType].name;
   $('roomSubtitle').textContent = `${players.length} / 8 · ${ROOM_TYPES[activeRoomType].subtitle}`;
   const url = new URL(window.location.href);
   url.searchParams.set('room', activeRoomId);
@@ -241,7 +243,7 @@ function enterRoom(response) {
   updateActivityControls(players);
   if (response.youtube?.videoId) applyInitialYoutubeState(response.youtube);
   renderMusicQueue({ queue: response.musicQueue || [], currentIndex: response.musicIndex ?? -1 });
-  showToast(players.length >= 2 ? 'Welcome to the penthouse. Your people are here.' : 'Your penthouse is ready. Share the invite link.');
+  showToast(players.length >= 2 ? 'Welcome to ' + ROOM_TYPES[activeRoomType].name + '. Your people are here.' : ROOM_TYPES[activeRoomType].name + ' is ready. Share the invite link.');
 }
 
 function createHouse() {
@@ -1238,12 +1240,12 @@ function createHouseScene(scene, colliders) {
   addElevatorStation([19.2, 0, -6.0], 'penthouse');
 
   // A compact, walkable skywalk district expands the shared map beyond the rooftop.
-  addBox(scene, 'city-district-foundation', [27.5, .18, 35.5], [40.35, -.18, 0], 0x46515d, { roughness: .9, castShadow: false });
-  addBox(scene, 'city-promenade-road', [22.5, .035, 6.2], [41.1, -.075, 0], 0x252d37, { roughness: .95, castShadow: false });
+  addBox(scene, 'city-district-foundation', [39.5, .18, 35.5], [46.35, -.18, 0], 0x46515d, { roughness: .9, castShadow: false });
+  addBox(scene, 'city-promenade-road', [34.5, .035, 6.2], [45.6, -.075, 0], 0x252d37, { roughness: .95, castShadow: false });
   addBox(scene, 'city-sidewalk-north', [25.5, .06, 3.2], [40.5, -.045, -5.0], 0x9c9a94, { castShadow: false });
   addBox(scene, 'city-sidewalk-south', [25.5, .06, 3.2], [40.5, -.045, 5.0], 0x9c9a94, { castShadow: false });
   [-1.7, 1.7].forEach((z) => {
-    addBox(scene, 'city-road-line', [20.8, .025, .055], [41.0, -.035, z], 0xe6d4a9, { castShadow: false });
+    addBox(scene, 'city-road-line', [32.5, .025, .055], [45.0, -.035, z], 0xe6d4a9, { castShadow: false });
   });
   // Mid-rise facades with lit windows, awnings and street-level storefronts.
   const cityBuildings = [
@@ -1284,6 +1286,16 @@ function createHouseScene(scene, colliders) {
     addCylinder(scene, 'city-lamp-post', .045, .06, 3.0, [34.0, 1.5, side * 7.0], 0x343b43);
     addSphere(scene, 'city-lamp-globe', .19, [34.0, 3.05, side * 7.0], 0xf2d7a8);
   });
+  // Shopping district: a lit glass-front mall with a walk-up entrance and mart sign.
+  addBox(scene, 'mall-plaza', [10.5, .08, 12.0], [57.2, -.02, 0], 0xb4aaa0, { roughness: .82 });
+  addBox(scene, 'mall-main-building', [8.2, 5.4, 9.0], [60.1, 2.7, 0], 0x596b78, { roughness: .5, metalness: .16 });
+  addBox(scene, 'mall-glass-front', [7.3, 3.5, .12], [60.1, 2.15, -4.58], 0x8dc6d0, { material: new THREE.MeshPhysicalMaterial({ color: 0x9bdce2, transparent: true, opacity: .52, roughness: .12, metalness: .12, transmission: .18 }) });
+  addBox(scene, 'mall-entrance-door', [1.45, 2.8, .16], [60.1, 1.42, -4.68], 0x273842, { material: new THREE.MeshPhysicalMaterial({ color: 0x9bdce2, transparent: true, opacity: .38, roughness: .12 }) });
+  addBox(scene, 'mall-roof-trim', [8.6, .24, 9.35], [60.1, 5.48, 0], 0xd9c2a9);
+  addRoomSign(scene, 'T&G CITY MALL', [60.1, 6.15, -4.95], '#ffe0a8');
+  addRoomSign(scene, 'MART · SHOP HERE', [53.6, 2.7, -1.1], '#b8e7c5');
+  for (let i = 0; i < 4; i++) addBox(scene, 'mall-display-' + i, [.72, 1.05, .62], [56.0 + i * 1.15, .54, -2.3], [0xd4a56f, 0x9dc6b1, 0xd9a2a5, 0x9bb8d2][i]);
+  colliders.push({ minX: 55.95, maxX: 64.25, minZ: -4.55, maxZ: 4.55 });
   addElevatorStation([28.5, 0, 0], 'city');
   // Raised edge rails frame the walkable skywalk without enclosing the promenade.
   addBox(scene, 'city-edge-north', [27.2, .8, .12], [40.35, .4, -17.7], 0x8b9da4);
@@ -1596,7 +1608,7 @@ function animateWorld() {
       const stepX = (dx / length) * speed * delta;
       const stepZ = (dz / length) * speed * delta;
       const bounds = currentZone === 'city'
-        ? { minX: 27.2, maxX: 53.2, minZ: -17.0, maxZ: 17.0 }
+        ? { minX: 27.2, maxX: 68.0, minZ: -17.0, maxZ: 17.0 }
         : { minX: -8.55, maxX: 21.2, minZ: -8.05, maxZ: 8.05 };
       const nextX = THREE.MathUtils.clamp(local.position.x + stepX, bounds.minX, bounds.maxX);
       const nextZ = THREE.MathUtils.clamp(local.position.z + stepZ, bounds.minZ, bounds.maxZ);
@@ -1723,6 +1735,9 @@ function animateWorld() {
     const station = currentZone === 'city' ? { x: 28.5, z: 0 } : { x: 19.2, z: -6.0 };
     const nearElevator = Math.hypot(local.position.x - station.x, local.position.z - station.z) < 3.6;
     $('elevatorButton').disabled = !nearElevator || Boolean(activeVehicleId);
+    const nearMall = currentZone === 'city' && Math.hypot(local.position.x - 53.6, local.position.z - 0.2) < 3.3;
+    $('mallButton').disabled = !nearMall || Boolean(activeVehicleId);
+    $('mallButton').classList.toggle('mall-nearby', nearMall);
     $('elevatorButton').textContent = currentZone === 'city' ? '↕ Elevator · Home (F)' : '↕ Elevator · City (F)';
   }
   updateActivityControls(players);
@@ -1793,6 +1808,69 @@ function travelElevator() {
   });
 }
 $('elevatorButton').addEventListener('click', travelElevator);
+
+const SHOP_ITEMS = [
+  { id: 'milk', name: 'Fresh milk', detail: 'Daily dairy essential', price: 18, icon: '🥛' },
+  { id: 'bread', name: 'Bakery bread', detail: 'Freshly baked loaf', price: 14, icon: '🍞' },
+  { id: 'apples', name: 'Apple pack', detail: 'Crisp fruit pack', price: 22, icon: '🍎' },
+  { id: 'snacks', name: 'Snack basket', detail: 'Treats for movie night', price: 28, icon: '🍿' },
+  { id: 'flowers', name: 'Flower bouquet', detail: 'A little gift for home', price: 35, icon: '💐' },
+  { id: 'coffee', name: 'Coffee pack', detail: 'For a cozy morning', price: 26, icon: '☕' }
+];
+const SHOP_STORAGE_KEY = 'tg-mall-wallet-v1';
+let shopWallet = 250;
+let shopCart = {};
+try {
+  const savedShop = JSON.parse(localStorage.getItem(SHOP_STORAGE_KEY) || '{}');
+  if (Number.isFinite(savedShop.wallet)) shopWallet = Math.max(0, savedShop.wallet);
+} catch (_error) {}
+function saveShopWallet() {
+  localStorage.setItem(SHOP_STORAGE_KEY, JSON.stringify({ wallet: shopWallet }));
+}
+function renderMall() {
+  const products = $('mallProducts');
+  if (!products) return;
+  products.innerHTML = SHOP_ITEMS.map((item) => {
+    const count = shopCart[item.id] || 0;
+    return '<article class="mall-product"><span class="mall-product-icon">' + item.icon + '</span><div class="mall-product-copy"><strong>' + item.name + '</strong><small>' + item.detail + '</small><b>' + item.price + ' coins</b></div><div class="mall-quantity"><button type="button" data-shop-minus="' + item.id + '" aria-label="Remove ' + item.name + '">−</button><span>' + count + '</span><button type="button" data-shop-plus="' + item.id + '" aria-label="Add ' + item.name + '">+</button></div></article>';
+  }).join('');
+  const total = SHOP_ITEMS.reduce((sum, item) => sum + item.price * (shopCart[item.id] || 0), 0);
+  $('mallWallet').textContent = 'Wallet: ' + shopWallet + ' coins';
+  $('mallCartTotal').textContent = 'Cart: ' + total + ' coins';
+  $('mallCheckout').disabled = total <= 0 || total > shopWallet;
+}
+function openMall() {
+  if (currentZone !== 'city') return showToast('Take the elevator down to the city mall.');
+  const local = world && world.playerObjects.get(selfId);
+  if (!local || Math.hypot(local.position.x - 53.6, local.position.z - .2) > 4.2) return showToast('Walk to the mall entrance first.');
+  $('mallPanel').classList.remove('hidden');
+  $('activitiesPanel').classList.add('hidden');
+  $('wardrobePanel').classList.add('hidden');
+  renderMall();
+}
+$('mallButton').addEventListener('click', openMall);
+$('mallClose').addEventListener('click', () => $('mallPanel').classList.add('hidden'));
+$('mallProducts').addEventListener('click', (event) => {
+  const addId = event.target.closest('[data-shop-plus]')?.dataset.shopPlus;
+  const removeId = event.target.closest('[data-shop-minus]')?.dataset.shopMinus;
+  const id = addId || removeId;
+  if (!id || !SHOP_ITEMS.some((item) => item.id === id)) return;
+  shopCart[id] = Math.max(0, (shopCart[id] || 0) + (addId ? 1 : -1));
+  if (!shopCart[id]) delete shopCart[id];
+  renderMall();
+});
+$('mallCheckout').addEventListener('click', () => {
+  const total = SHOP_ITEMS.reduce((sum, item) => sum + item.price * (shopCart[item.id] || 0), 0);
+  if (!total || total > shopWallet) return renderMall();
+  shopWallet -= total;
+  const purchased = SHOP_ITEMS.filter((item) => shopCart[item.id]).map((item) => shopCart[item.id] + '× ' + item.name).join(', ');
+  shopCart = {};
+  saveShopWallet();
+  renderMall();
+  $('mallMessage').textContent = 'Purchase complete: ' + purchased + '. Enjoy your shopping!';
+  showToast('Shopping complete! Your items are in your virtual bag.');
+});
+renderMall();
 $('wardrobeToggle').addEventListener('click', () => {
   const willOpen = $('wardrobePanel').classList.contains('hidden');
   $('activitiesPanel').classList.add('hidden');
