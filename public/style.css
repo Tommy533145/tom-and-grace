@@ -302,3 +302,5 @@ h1 em { color: var(--rose); font-weight: 600; }
 .saved-playlist-item { display:flex; align-items:center; gap:6px; max-width:100%; padding:4px 7px; border:1px solid rgba(229,167,169,.18); border-radius:6px; color:#d8cbd0; background:rgba(255,255,255,.035); font-size:8px; }
 .saved-playlist-item span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .saved-playlist-delete { border:0; background:transparent; color:#e6a6a8; font-size:14px; line-height:1; padding:0 2px; }
+
+.world-weather-control{display:flex;align-items:center;gap:6px;padding:5px 7px;border:1px solid rgba(255,255,255,.16);border-radius:9px;background:rgba(19,20,26,.82);backdrop-filter:blur(12px)}.world-weather-control label{color:#b9c5d1;font-size:7px;font-weight:900;letter-spacing:1px}.world-weather-select{max-width:126px;min-width:0;height:27px;border:0;outline:0;color:#f5eee9;background:#242832;border-radius:6px;padding:0 6px;font-size:8px;color-scheme:dark}@media(max-width:700px){.world-weather-control{position:absolute;left:10px;top:10px;z-index:5;padding:4px 6px}.world-weather-select{max-width:112px}}
