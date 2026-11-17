@@ -2234,36 +2234,118 @@ function extractYoutubeId(value) {
   return '';
 }
 
+const SAVED_PLAYLISTS_KEY = 'tom-grace-saved-youtube-playlists';
+let savedPlaylists = loadSavedPlaylists();
+let playlistDraft = [];
+
+function loadSavedPlaylists() {
+  try {
+    const value = JSON.parse(localStorage.getItem(SAVED_PLAYLISTS_KEY) || '[]');
+    return Array.isArray(value) ? value.filter((item) => item && typeof item.name === 'string' && Array.isArray(item.tracks)) : [];
+  } catch (_error) { return []; }
+}
+
+function persistSavedPlaylists() {
+  localStorage.setItem(SAVED_PLAYLISTS_KEY, JSON.stringify(savedPlaylists));
+  renderSavedPlaylists();
+}
+
+function renderSavedPlaylists() {
+  const select = $('savedPlaylistSelect');
+  const list = $('savedPlaylistList');
+  if (!select || !list) return;
+  const selected = select.value;
+  select.innerHTML = '<option value="">Your saved playlists</option>';
+  list.innerHTML = '';
+  savedPlaylists.forEach((playlist, index) => {
+    const option = document.createElement('option');
+    option.value = String(index);
+    option.textContent = `${playlist.name} · ${playlist.tracks.length} tracks`;
+    select.appendChild(option);
+    const item = document.createElement('div');
+    item.className = 'saved-playlist-item';
+    const label = document.createElement('span');
+    label.textContent = `${playlist.name} (${playlist.tracks.length})`;
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'saved-playlist-delete';
+    remove.textContent = '×';
+    remove.setAttribute('aria-label', `Delete ${playlist.name}`);
+    remove.addEventListener('click', () => {
+      savedPlaylists.splice(index, 1);
+      persistSavedPlaylists();
+    });
+    item.append(label, remove);
+    list.appendChild(item);
+  });
+  if (selected && savedPlaylists[Number(selected)]) select.value = selected;
+  if (!savedPlaylists.length) list.innerHTML = '<div class="music-queue-empty">No saved playlists yet.</div>';
+}
+
 function renderMusicQueue(state = {}) {
   musicQueue = Array.isArray(state.queue) ? state.queue : [];
   musicIndex = Number.isInteger(state.currentIndex) ? state.currentIndex : -1;
   const current = musicQueue[musicIndex];
   $('musicNowPlaying').textContent = current
-    ? 'Shared with everyone in this room. Press play on the video if needed.'
-    : 'Paste a link and press Share.';
+    ? `Now sharing track ${musicIndex + 1} of ${musicQueue.length}. Everyone in this room gets the same queue.`
+    : 'Add songs, save a playlist, then play it anytime.';
+  const list = $('musicQueueList');
+  list.innerHTML = '';
+  if (!musicQueue.length) list.innerHTML = '<div class="music-queue-empty">The shared room queue is empty.</div>';
+  musicQueue.forEach((track, index) => {
+    const item = document.createElement('div');
+    item.className = `music-queue-item${index === musicIndex ? ' active' : ''}`;
+    item.textContent = `${index === musicIndex ? '▶ ' : ''}Track ${index + 1} · added by ${track.addedBy || 'player'}`;
+    list.appendChild(item);
+  });
+  $('musicNextButton').disabled = musicIndex < 0 || musicIndex >= musicQueue.length - 1;
+}
+
+function sendPlaylistToRoom(tracks, button) {
+  if (!tracks.length) return showToast('This playlist has no tracks yet.');
+  if (!activeRoomId) return showToast('Join a room before playing a playlist.');
+  button.disabled = true;
+  socket.emit('music:queue:replace', { videoIds: tracks }, (response) => {
+    button.disabled = false;
+    if (!response?.ok) return showToast(response?.error || 'Could not share this playlist.');
+    renderMusicQueue(response.queue || {});
+    showToast('Playlist shared with everyone in the room ♫');
+  });
 }
 
 function addMusicToQueue() {
   const videoId = extractYoutubeId($('musicInput').value);
-  if (!videoId || !/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
-    showToast('Please paste a valid YouTube video link.');
-    return;
-  }
-  const button = $('musicAddButton');
-  button.disabled = true;
-  socket.emit('music:queue:add', { videoId }, (response) => {
-    button.disabled = false;
-    if (!response?.ok) return showToast(response?.error || 'Could not share this video. Please try again.');
-    $('musicInput').value = '';
-    renderMusicQueue(response.queue || {});
-    showToast('YouTube video shared with everyone in the room ♫');
-  });
+  if (!videoId || !/^[a-zA-Z0-9_-]{11}$/.test(videoId)) return showToast('Please paste a valid YouTube video link.');
+  playlistDraft.push(videoId);
+  $('musicInput').value = '';
+  $('musicNowPlaying').textContent = `${playlistDraft.length} track(s) in your playlist draft. Save it or add more songs.`;
+  showToast('Track added to your playlist draft.');
 }
 
 $('musicAddButton').addEventListener('click', addMusicToQueue);
-$('musicInput').addEventListener('keydown', (event) => {
-  if (event.key === 'Enter') addMusicToQueue();
+$('musicInput').addEventListener('keydown', (event) => { if (event.key === 'Enter') addMusicToQueue(); });
+$('savePlaylistButton').addEventListener('click', () => {
+  const name = $('playlistNameInput').value.trim().slice(0, 40);
+  if (!name) return showToast('Give your playlist a name first.');
+  if (!playlistDraft.length) return showToast('Add at least one YouTube track first.');
+  savedPlaylists.push({ name, tracks: [...playlistDraft] });
+  playlistDraft = [];
+  $('playlistNameInput').value = '';
+  persistSavedPlaylists();
+  showToast('Playlist saved on this device ♡');
 });
+$('playSavedPlaylistButton').addEventListener('click', () => {
+  const playlist = savedPlaylists[Number($('savedPlaylistSelect').value)];
+  if (!playlist) return showToast('Choose one of your saved playlists first.');
+  sendPlaylistToRoom(playlist.tracks, $('playSavedPlaylistButton'));
+});
+$('musicNextButton').addEventListener('click', () => {
+  $('musicNextButton').disabled = true;
+  socket.emit('music:next', {}, (response) => {
+    if (!response?.ok) showToast(response?.error || 'Could not play the next track.');
+  });
+});
+renderSavedPlaylists();
 
 function showYoutubeTapToPlay(show = true) {
   const button = $('youtubeTapToPlay');
