@@ -109,6 +109,9 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   let invalidPlaylist;
   b.clientEmit('music:queue:replace', { videoIds: ['bad'] }, (response) => { invalidPlaylist = response; });
   assert.equal(invalidPlaylist?.ok, false, 'invalid shared playlists are rejected');
+  let oversizedPlaylist;
+  a.clientEmit('music:queue:replace', { videoIds: Array(51).fill('dQw4w9WgXcQ') }, (response) => { oversizedPlaylist = response; });
+  assert.equal(oversizedPlaylist?.ok, false, 'shared playlists are capped at 50 tracks');
 
   let chatResponse;
   b.clientEmit('chat:send', { text: 'Hello from Grace' }, (response) => { chatResponse = response; });
