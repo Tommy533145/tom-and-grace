@@ -425,7 +425,7 @@ io.on('connection', (socket) => {
     const player = room?.players.get(socket.id);
     if (!room || !player) return callback?.({ ok: false, error: 'Join a penthouse first.' });
     if (player.zone !== 'penthouse' || player.vehicleId) return callback?.({ ok: false, error: 'The upstairs staircase is inside the penthouse.' });
-    if (Math.hypot(player.position.x, player.position.z - 1.0) > 4.2) return callback?.({ ok: false, error: 'Walk to the central staircase first.' });
+
     player.position = { x: 0, y: (Number(player.position.y) || 0) > 1.5 ? 0 : 3.36, z: 1.0 };
     player.action = 'none';
     player.bedId = null;
