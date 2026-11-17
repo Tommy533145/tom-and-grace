@@ -46,6 +46,8 @@
           <button class="room-choice" type="button" data-room-type="music" aria-pressed="false"><span class="room-choice-icon">♫</span><span class="room-choice-title">Music Lounge</span><small>Listen and hang out</small></button>
           <button class="room-choice" type="button" data-room-type="cozy" aria-pressed="false"><span class="room-choice-icon">♡</span><span class="room-choice-title">Cozy Retreat</span><small>Quiet chats & relaxing</small></button>
           <button class="room-choice" type="button" data-room-type="game" aria-pressed="false"><span class="room-choice-icon">✧</span><span class="room-choice-title">Game Night</span><small>Meet up with friends</small></button>
+          <button class="room-choice" type="button" data-room-type="garden" aria-pressed="false"><span class="room-choice-icon">❀</span><span class="room-choice-title">Garden Villa</span><small>Greenery & peaceful chats</small></button>
+          <button class="room-choice" type="button" data-room-type="cinema" aria-pressed="false"><span class="room-choice-icon">▣</span><span class="room-choice-title">Cinema Room</span><small>Movie-night atmosphere</small></button>
         </div>
         <div class="field-label character-label">CHOOSE YOUR CHARACTER</div>
         <div class="character-grid" id="characterGrid">
@@ -85,7 +87,7 @@
           </div>
           <div class="world-tools">
             <button id="wardrobeToggle" class="world-tool-button" type="button">✦ Wardrobe</button><button id="activitiesToggle" class="world-tool-button activity-tool" type="button">♡ Activities</button>
-            <button id="driveButton" class="world-tool-button drive-tool" type="button">↗ Enter car (E)</button><button id="elevatorButton" class="world-tool-button elevator-tool" type="button" disabled>↕ Elevator (F)</button>
+            <button id="driveButton" class="world-tool-button drive-tool" type="button">↗ Enter car (E)</button><button id="elevatorButton" class="world-tool-button elevator-tool" type="button" disabled>↕ Elevator (F)</button><button id="mallButton" class="world-tool-button mall-tool" type="button" disabled>🛍 Mall & Mart</button>
           </div>
           <section id="wardrobePanel" class="wardrobe-panel hidden" aria-label="Character wardrobe">
             <div class="wardrobe-heading"><div><span class="wardrobe-kicker">YOUR STYLE</span><strong>Wardrobe</strong></div><button id="wardrobeClose" class="wardrobe-close" type="button" aria-label="Close wardrobe">×</button></div>
@@ -113,6 +115,13 @@
             <button id="danceButton" class="activity-action-button dance-action" type="button">Start dancing</button>
             <button id="stopActivityButton" class="activity-stop-button hidden" type="button">Stop activity</button>
             <small id="activityHint">Walk close to either bedroom bed to sleep. Everyone in the room can see your activity.</small>
+          </section>
+          <section id="mallPanel" class="mall-panel hidden" aria-label="Shopping mall">
+            <div class="mall-heading"><div><span class="wardrobe-kicker">CITY CENTRE</span><strong>Tom&Grace Mall</strong><small id="mallWallet">Wallet: 250 coins</small></div><button id="mallClose" class="wardrobe-close" type="button" aria-label="Close mall">×</button></div>
+            <p class="mall-intro">Pick up everyday essentials and treats for your home. Purchases use in-game coins only.</p>
+            <div id="mallProducts" class="mall-products"></div>
+            <div class="mall-checkout"><span id="mallCartTotal">Cart: 0 coins</span><button id="mallCheckout" class="wardrobe-apply" type="button" disabled>Checkout</button></div>
+            <div id="mallMessage" class="mall-message" role="status">Visit the mall to start shopping.</div>
           </section>
           <div class="world-hint"><span class="keycap">W</span><span class="keycap">A</span><span class="keycap">S</span><span class="keycap">D</span><small>move / drive</small><span class="keycap">E</span><small>enter / exit car</small><span class="hint-separator"></span><span class="keycap">F</span><small>elevator</small><span class="hint-separator"></span><small>Activities: sleep / dance</small><span class="hint-separator"></span><small>drag to orbit · scroll to zoom</small></div>
           <div id="worldLoading" class="world-loading"><span class="loading-orbit"></span><span>Opening your house…</span></div>
