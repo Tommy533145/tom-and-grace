@@ -187,7 +187,7 @@ function scheduleDisconnectedRoomCleanup(socket) {
     const currentRoom = getRoom(roomId);
     if (currentRoom?.players.get(socket.id) !== player) return;
     removePlayerFromRoom(roomId, socket.id, 'disconnected.');
-  }, 2 * 60 * 1000);
+  }, 150 * 1000);
   timer.unref?.();
   disconnectCleanupTimers.set(socket.id, timer);
 }
