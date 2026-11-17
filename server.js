@@ -95,6 +95,7 @@ function publicPlayers(room) {
     action: p.action || 'none',
     danceStyle: p.danceStyle || 'groove',
     bedId: p.bedId || null,
+    chairId: p.chairId || null,
     vehicleId: p.vehicleId || null,
     zone: p.zone || 'penthouse',
     voiceJoined: Boolean(p.voiceJoined),
