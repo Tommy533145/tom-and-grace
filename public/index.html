@@ -65,6 +65,17 @@
         <section class="world-stage" aria-label="3D house">
           <div class="world-caption"><span class="world-spark">✦</span><div><strong>EXPLORE THE SOCIAL WORLD</strong><small>Penthouse · Rooftop pool · City promenade · Private garage</small></div></div>
           <div id="worldCanvas" class="world-canvas"></div>
+          <div id="mobileControls" class="mobile-controls hidden" aria-label="Mobile game controls">
+            <div class="mobile-joystick" id="mobileJoystick" role="group" aria-label="Movement joystick">
+              <span class="joystick-ring"></span><span class="joystick-thumb" id="joystickThumb"></span>
+              <span class="joystick-label">MOVE</span>
+            </div>
+            <div class="mobile-action-stack">
+              <button id="mobileInteract" class="mobile-action-button" type="button">Enter / exit car</button>
+              <button id="mobileElevator" class="mobile-action-button secondary" type="button">Elevator</button>
+              <button id="mobileActivities" class="mobile-action-button secondary" type="button">Activities</button>
+            </div>
+          </div>
           <div class="world-tools">
             <button id="wardrobeToggle" class="world-tool-button" type="button">✦ Wardrobe</button><button id="activitiesToggle" class="world-tool-button activity-tool" type="button">♡ Activities</button>
             <button id="driveButton" class="world-tool-button drive-tool" type="button">↗ Enter car (E)</button><button id="elevatorButton" class="world-tool-button elevator-tool" type="button" disabled>↕ Elevator (F)</button>
