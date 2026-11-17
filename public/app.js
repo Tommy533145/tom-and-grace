@@ -2376,6 +2376,7 @@ function renderMusicQueue(state = {}) {
 
 function sendPlaylistToRoom(tracks, button) {
   if (!tracks.length) return showToast('This playlist has no tracks yet.');
+  if (tracks.length > 50) return showToast('A shared playlist can contain up to 50 tracks.');
   if (!activeRoomId) return showToast('Join a room before playing a playlist.');
   button.disabled = true;
   socket.emit('music:queue:replace', { videoIds: tracks }, (response) => {
@@ -2389,6 +2390,7 @@ function sendPlaylistToRoom(tracks, button) {
 function addMusicToQueue() {
   const videoId = extractYoutubeId($('musicInput').value);
   if (!videoId || !/^[a-zA-Z0-9_-]{11}$/.test(videoId)) return showToast('Please paste a valid YouTube video link.');
+  if (playlistDraft.length >= 50) return showToast('A playlist can contain up to 50 tracks.');
   playlistDraft.push(videoId);
   $('musicInput').value = '';
   $('musicNowPlaying').textContent = `${playlistDraft.length} track(s) in your playlist draft. Save it or add more songs.`;
