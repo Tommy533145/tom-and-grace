@@ -29,7 +29,7 @@ const ACCESSORIES = new Set(['none', 'beanie', 'cap', 'sunglasses']);
 const ROOM_TYPES = new Set(['penthouse', 'music', 'cozy', 'game', 'garden', 'cinema']);
 const DANCE_STYLES = new Set(['groove', 'disco', 'salsa', 'bounce', 'sway']);
 const BED_SPOTS = { 'bed-one': { x: -5.15, z: -5.2 }, 'bed-two': { x: 4.05, z: -5.2 } };
-const CHAIR_SPOTS = { 'up-lounge-chair': {x:-6.2,z:4.45,y:3.36,exitX:-7.25,exitZ:4.45}, 'up-office-chair': {x:5.2,z:4.55,y:3.36,exitX:6.35,exitZ:4.55}, 'up-game-chair': {x:-5.0,z:2.65,y:3.36,exitX:-6.1,exitZ:2.65}, 'up-guest-chair': {x:6.8,z:-2.1,y:3.36,exitX:7.85,exitZ:-2.1} };
+const CHAIR_SPOTS = { 'reading-chair': {x:-3.9,z:4.1,y:0,exitX:-5.1,exitZ:4.1}, 'dining-chair-a': {x:3.75,z:6.0,y:0,exitX:2.65,exitZ:6.0}, 'dining-chair-b': {x:5.85,z:6.0,y:0,exitX:6.95,exitZ:6.0}, 'dining-chair-c': {x:3.75,z:7.05,y:0,exitX:2.65,exitZ:7.05}, 'dining-chair-d': {x:5.85,z:7.05,y:0,exitX:6.95,exitZ:7.05} };
 
 app.use(express.static(path.join(__dirname, 'public')));
 const REGION_ID = process.env.REGION_ID || 'global';
@@ -57,7 +57,7 @@ app.get('/api/regions', (req, res) => {
 app.get('/health', (_req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Cache-Control', 'no-store');
-  res.json({ ok: true, app: 'Tom&Grace', edition: 'Shared Music Room 1.5', region: REGION_ID, maxPlayersPerRoom: MAX_PLAYERS_PER_ROOM, features: ['room-chat', 'proximity-voice', 'elevator-city', 'expanded-city-retail', 'penthouse-mini-mart-shopping', 'selectable-room-themes', 'synchronized-movement', 'sleep', 'dance', 'second-floor-penthouse', 'expanded-penthouse-wing', 'multiplayer-floor-travel', 'synchronized-chair-sitting', 'open-world-exploration', 'shared-music-queue', 'spotify-personal-embed', 'regional-discovery'] });
+  res.json({ ok: true, app: 'Tom&Grace', edition: 'Shared Music Room 1.5', region: REGION_ID, maxPlayersPerRoom: MAX_PLAYERS_PER_ROOM, features: ['room-chat', 'proximity-voice', 'elevator-city', 'expanded-city-retail', 'penthouse-mini-mart-shopping', 'selectable-room-themes', 'synchronized-movement', 'sleep', 'dance', 'single-floor-penthouse', 'expanded-penthouse-wing', 'multiplayer-floor-travel', 'synchronized-chair-sitting', 'open-world-exploration', 'shared-music-queue', 'spotify-personal-embed', 'regional-discovery'] });
 });
 
 function cleanText(value, fallback = '', max = 20) {
@@ -383,11 +383,11 @@ io.on('connection', (socket) => {
       if (!nearestBed || nearestBed.distance > 3.5) return callback?.({ ok: false, error: 'Walk closer to a bedroom bed first.' });
     }
     if (nextAction === 'sit') {
-      if (player.zone !== 'penthouse' || (Number(player.position.y) || 0) < 1.5) return callback?.({ ok: false, error: 'The interactive chairs are upstairs.' });
+      if (player.zone !== 'penthouse' || (Number(player.position.y) || 0) > 1.5) return callback?.({ ok: false, error: 'Sitting is available on the main floor.' });
       nearestChair = Object.entries(CHAIR_SPOTS)
         .map(([id, spot]) => ({ id, ...spot, distance: Math.hypot(player.position.x - spot.x, player.position.z - spot.z) }))
         .sort((a, b) => a.distance - b.distance)[0];
-      if (!nearestChair || nearestChair.distance > 2.3) return callback?.({ ok: false, error: 'Walk closer to an upstairs chair first.' });
+      if (!nearestChair || nearestChair.distance > 2.3) return callback?.({ ok: false, error: 'Walk closer to a chair on the main floor first.' });
     }
     const previousAction = player.action;
     const previousBed = player.bedId ? BED_SPOTS[player.bedId] : null;
@@ -417,22 +417,6 @@ io.on('connection', (socket) => {
     socket.data.lastActionAt = now;
     io.to(roomId).emit('room:players', publicPlayers(room));
     callback?.({ ok: true, action: player.action, danceStyle: player.danceStyle, position: player.position, players: publicPlayers(room) });
-  });
-
-  socket.on('floor:travel', (_payload = {}, callback) => {
-    const roomId = socket.data.roomId;
-    const room = roomId && getRoom(roomId);
-    const player = room?.players.get(socket.id);
-    if (!room || !player) return callback?.({ ok: false, error: 'Join a penthouse first.' });
-    if (player.zone !== 'penthouse' || player.vehicleId) return callback?.({ ok: false, error: 'The upstairs staircase is inside the penthouse.' });
-
-    player.position = { x: 0, y: (Number(player.position.y) || 0) > 1.5 ? 0 : 3.36, z: 1.0 };
-    player.action = 'none';
-    player.bedId = null;
-    player.chairId = null;
-    player.moving = false;
-    io.to(roomId).emit('room:players', publicPlayers(room));
-    callback?.({ ok: true, position: player.position, players: publicPlayers(room) });
   });
 
   socket.on('chat:send', ({ text } = {}, callback) => {
