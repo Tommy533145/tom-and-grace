@@ -40,6 +40,13 @@
           </select>
           <span id="regionStatus" class="region-status" role="status" aria-live="polite">Checking server…</span>
         </div>
+        <div class="field-label room-choice-label">CHOOSE YOUR HANGOUT ROOM</div>
+        <div class="room-choice-grid" id="roomChoiceGrid" role="group" aria-label="Choose a room">
+          <button class="room-choice selected" type="button" data-room-type="penthouse" aria-pressed="true"><span class="room-choice-icon">⌂</span><span class="room-choice-title">Penthouse</span><small>City views & rooftop life</small></button>
+          <button class="room-choice" type="button" data-room-type="music" aria-pressed="false"><span class="room-choice-icon">♫</span><span class="room-choice-title">Music Lounge</span><small>Listen and hang out</small></button>
+          <button class="room-choice" type="button" data-room-type="cozy" aria-pressed="false"><span class="room-choice-icon">♡</span><span class="room-choice-title">Cozy Retreat</span><small>Quiet chats & relaxing</small></button>
+          <button class="room-choice" type="button" data-room-type="game" aria-pressed="false"><span class="room-choice-icon">✧</span><span class="room-choice-title">Game Night</span><small>Meet up with friends</small></button>
+        </div>
         <div class="field-label character-label">CHOOSE YOUR CHARACTER</div>
         <div class="character-grid" id="characterGrid">
           <button class="character-option selected" data-character="tom" type="button"><span class="avatar avatar-tom"><i class="hair hair-dark"></i><i class="face"></i><i class="body body-blue"></i></span><span class="character-name">Tom</span><span class="character-caption">The easygoing one</span></button>
@@ -57,7 +64,7 @@
 
     <section id="game" class="game hidden">
       <div class="game-topline">
-        <div class="room-identity"><span class="house-icon">⌂</span><div><strong>Our penthouse</strong><small id="roomSubtitle">Your city-view home</small></div></div>
+        <div class="room-identity"><span class="house-icon">⌂</span><div><strong id="activeRoomName">Our Penthouse</strong><small id="roomSubtitle">Your city-view home</small></div></div>
         <div class="room-actions"><div class="residents" id="residentAvatars"></div><button id="inviteButton" class="invite-button" type="button"><span>＋</span> Invite friends</button><button id="leaveButton" class="icon-button" type="button" aria-label="Leave house" title="Leave house">↗</button></div>
       </div>
 
