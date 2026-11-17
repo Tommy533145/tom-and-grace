@@ -1414,6 +1414,32 @@ function createHouseScene(scene, colliders) {
     addRoomSign(scene, 'COZY RETREAT · FIREPLACE', [-5.0, 2.5, 1.4], '#ffdfc1');
   }
 
+  // ---------------- Expanded east penthouse wing: spa, gym and cinema ----------------
+  addBox(scene,'penthouse-east-wing-floor',[15.4,.18,16.0],[16.8,-.05,0],0xb7a18e,{roughness:.62});
+  addBox(scene,'east-wing-spa-rug',[4.8,.035,5.8],[11.7,.055,0],0x8b9b91,{castShadow:false});
+  addBox(scene,'east-wing-gym-rug',[4.2,.035,5.8],[16.8,.055,0],0x596c75,{castShadow:false});
+  addBox(scene,'east-wing-cinema-rug',[4.7,.035,5.8],[21.7,.055,0],0x5b526c,{castShadow:false});
+  addHouseWall(scene,colliders,'east-wing-back-wall',[15.4,2.65,.18],[16.8,1.3,-8.0],0x66504b);
+  addHouseWall(scene,colliders,'east-wing-front-wall',[15.4,2.65,.18],[16.8,1.3,8.0],0x66504b);
+  addHouseWall(scene,colliders,'east-wing-outer-wall',[.18,2.65,16.0],[24.5,1.3,0],0x66504b);
+  addHouseWall(scene,colliders,'east-wing-spa-divider-a',[.16,2.65,6.0],[14.25,1.3,-5.0],0x80675c);
+  addHouseWall(scene,colliders,'east-wing-spa-divider-b',[.16,2.65,6.0],[14.25,1.3,5.0],0x80675c);
+  addHouseWall(scene,colliders,'east-wing-gym-divider-a',[.16,2.65,6.1],[19.2,1.3,-4.95],0x80675c);
+  addHouseWall(scene,colliders,'east-wing-gym-divider-b',[.16,2.65,6.1],[19.2,1.3,4.95],0x80675c);
+  addRoomSign(scene,'PRIVATE SPA',[11.7,2.35,-2.8],'#c9e6d8');
+  addBox(scene,'spa-plunge-pool',[3.0,.55,2.0],[11.7,.28,4.25],0x779fa5);
+  addBox(scene,'spa-water',[2.75,.06,1.75],[11.7,.59,4.25],0x8fcbd0);
+  addBox(scene,'spa-treatment-bed',[1.0,.55,2.0],[12.7,.34,-4.6],0xd8c9b8);
+  addRoomSign(scene,'FITNESS STUDIO',[16.8,2.35,-2.8],'#d3e7f0');
+  addBox(scene,'gym-treadmill-base',[1.0,.2,2.2],[16.8,.2,-4.5],0x303941);
+  addBox(scene,'gym-treadmill-screen',[.65,.75,.12],[16.8,.68,-5.35],0x202c39);
+  addCylinder(scene,'gym-weight-stack',.42,.42,1.1,[17.8,.55,4.2],0x555d68,16);
+  addRoomSign(scene,'PRIVATE CINEMA',[21.7,2.35,-2.8],'#e1d0f3');
+  addBox(scene,'cinema-screen',[4.0,2.0,.16],[21.7,1.75,-6.5],0x171b27);
+  addBox(scene,'cinema-screen-glow',[3.65,1.7,.035],[21.7,1.78,-6.39],0x415a82,{material:new THREE.MeshStandardMaterial({color:0x415a82,emissive:0x294e8c,emissiveIntensity:.55})});
+  addBox(scene,'cinema-sofa',[3.5,.55,1.0],[21.7,.38,4.4],0x594e69);
+  addBox(scene,'cinema-sofa-back',[3.5,.95,.22],[21.7,.85,4.82],0x706180);
+
   // ---------------- Second-floor penthouse expansion ----------------
   // A separate upper level shares the penthouse footprint; floor travel is synchronized by the server.
   addBox(scene, 'upper-floor-slab', [17.7, .22, 15.7], [0, 3.25, 0], 0xc9b9a9, { roughness: .58 });
@@ -1464,6 +1490,11 @@ function createHouseScene(scene, colliders) {
   addBox(scene,'staircase-side-rail-left',[.09,3.15,4.2],[-.86,1.55,.8],0x5d4b47);
   addBox(scene,'staircase-side-rail-right',[.09,3.15,4.2],[.86,1.55,.8],0x5d4b47);
   addRoomSign(scene, 'UPSTAIRS', [0,5.0,2.7], '#f3d9bd');
+  const upstairsKeyLight = new THREE.PointLight(0xffd8b4, 1.15, 26);
+  upstairsKeyLight.position.set(0, 7.2, 0);
+  scene.add(upstairsKeyLight);
+  addBox(scene,'upper-level-glass-balcony',[7.0,.08,.12],[0,3.62,7.65],0x9bc7c7,{material:new THREE.MeshPhysicalMaterial({color:0x9bc7c7,transparent:true,opacity:.34,roughness:.12,metalness:.12})});
+
   // Interactive seats are placed in open floor space with clear exit points beside each chair.
   const upperChairPositions=[{id:'up-lounge-chair',x:-6.2,z:4.45,y:3.36},{id:'up-office-chair',x:5.2,z:4.55,y:3.36},{id:'up-game-chair',x:-5.0,z:2.65,y:3.36},{id:'up-guest-chair',x:6.8,z:-2.1,y:3.36}];
   upperChairPositions.forEach((chair)=>{
@@ -1497,7 +1528,9 @@ function createHouseScene(scene, colliders) {
 
 
 
-  // A larger, walkable city district with room for a second block of streets.
+  // Continuous terrain beyond the old promenade limits lets players explore the wider map.
+  addBox(scene,'open-world-exploration-ground',[310,.28,270],[60,-.36,0],0x59645d,{roughness:.96,castShadow:false});
+    // A larger, walkable city district with room for a second block of streets.
   addBox(scene, 'city-district-foundation', [67.5, .18, 53.5], [60.25, -.18, 0], 0x46515d, { roughness: .9, castShadow: false });
   addBox(scene, 'city-promenade-road', [63.5, .035, 6.2], [59.0, -.075, 0], 0x252d37, { roughness: .95, castShadow: false });
   addBox(scene, 'city-sidewalk-north', [61.0, .06, 3.2], [58.0, -.045, -5.0], 0x9c9a94, { castShadow: false });
@@ -2012,8 +2045,10 @@ function animateWorld() {
       const stepX = (dx / length) * speed * delta;
       const stepZ = (dz / length) * speed * delta;
       const bounds = currentZone === 'city'
-        ? { minX: 27.2, maxX: 92.0, minZ: -26.0, maxZ: 26.0 }
-        : { minX: -8.55, maxX: 21.2, minZ: -8.05, maxZ: 8.05 };
+        ? { minX: -90, maxX: 210, minZ: -130, maxZ: 130 }
+        : local.position.y > 1.5
+          ? { minX: -8.4, maxX: 8.4, minZ: -7.4, maxZ: 7.4 }
+          : { minX: -8.55, maxX: 24.35, minZ: -8.05, maxZ: 8.05 };
       const nextX = THREE.MathUtils.clamp(local.position.x + stepX, bounds.minX, bounds.maxX);
       const nextZ = THREE.MathUtils.clamp(local.position.z + stepZ, bounds.minZ, bounds.maxZ);
       const activeColliders = local.position.y > 1.5 ? [] : world.colliders;
@@ -2154,6 +2189,21 @@ function animateWorld() {
     $('mallButton').disabled = !nearMall || Boolean(activeVehicleId);
     $('mallButton').classList.toggle('mall-nearby', nearMall);
     $('elevatorButton').textContent = currentZone === 'city' ? '↕ Elevator · Home (F)' : '↕ Elevator · City (F)';
+  }
+  if (local && $('floorButton')) {
+    const canUseFloorLift = currentZone === 'penthouse' && !activeVehicleId;
+    $('floorButton').disabled = !canUseFloorLift;
+    $('floorButton').textContent = local.position.y > 1.5 ? '⇩ Main Floor' : '⇧ Second Floor';
+  }
+  if (local && $('chairButton')) {
+    const chairAction = local.userData.action || 'none';
+    const chairList = [
+      {x:-6.2,z:4.45},{x:5.2,z:4.55},{x:-5.0,z:2.65},{x:6.8,z:-2.1}
+    ];
+    const closeToChair = currentZone === 'penthouse' && local.position.y > 1.5 &&
+      chairList.some((chair) => Math.hypot(local.position.x-chair.x,local.position.z-chair.z) < 2.4);
+    $('chairButton').disabled = chairAction !== 'sit' && (!closeToChair || Boolean(activeVehicleId));
+    $('chairButton').textContent = chairAction === 'sit' ? '↗ Stand up' : '▣ Sit';
   }
   updateActivityControls(players);
   updateVoiceAudioVolumes();
