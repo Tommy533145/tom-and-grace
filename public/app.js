@@ -2070,7 +2070,7 @@ function animateWorld() {
       const speed = style === 'sway' ? 1.4 : style === 'salsa' ? 4.2 : 3.2;
       const wave = Math.sin(beat * speed + phase);
       const counter = Math.sin(beat * speed + phase + Math.PI);
-      if (object.visible) object.position.y = (style === 'bounce' || style === 'disco' ? Math.abs(wave) * .13 : Math.abs(wave) * .045);
+      if (object.visible) object.position.y = (Number(object.userData.floorY) || 0) + (style === 'bounce' || style === 'disco' ? Math.abs(wave) * .13 : Math.abs(wave) * .045);
       object.rotation.z = style === 'sway' ? Math.sin(beat * 1.5 + phase) * .16 : Math.sin(beat * 3.0 + phase) * .09;
       if (limbs) {
         if (style === 'disco') {
@@ -2215,6 +2215,30 @@ function travelElevator() {
 }
 $('elevatorButton').addEventListener('click', travelElevator);
 
+function travelFloor() {
+  if (!activeRoomId) return;
+  socket.emit('floor:travel', {}, (response) => {
+    if (!response?.ok) return showToast(response?.error || 'Could not use the stairs.');
+    players = response.players || players;
+    updatePlayers(players);
+    const local = world?.playerObjects.get(selfId);
+    if (local && response.position) {
+      local.position.set(response.position.x, response.position.y || 0, response.position.z);
+      local.userData.targetPosition.set(response.position.x, response.position.y || 0, response.position.z);
+      local.userData.floorY = response.position.y || 0;
+    }
+    lastSentPosition = response.position || lastSentPosition;
+    moveKeys.clear();
+    showToast(response.position?.y > 1.5 ? 'Welcome upstairs! Explore the new rooms.' : 'You are back on the main floor.');
+  });
+}
+$('floorButton')?.addEventListener('click', travelFloor);
+$('chairButton')?.addEventListener('click', () => {
+  const local = world?.playerObjects.get(selfId);
+  const action = local?.userData.action || 'none';
+  setPlayerActivity(action === 'sit' ? 'none' : 'sit');
+});
+
 const SHOP_ITEMS = [
   { id: 'milk', name: 'Fresh milk', detail: 'Daily dairy essential', price: 18, icon: '🥛' },
   { id: 'bread', name: 'Bakery bread', detail: 'Freshly baked loaf', price: 14, icon: '🍞' },
@@ -2331,6 +2355,17 @@ function updateActivityControls(nextPlayers = players) {
       : nearBed && nearBed.distance <= 3.5
         ? 'You are close to a bed. Press Sleep to lie down.'
         : 'Walk close to either bedroom bed to sleep. Dancing works anywhere on the map.';
+}
+
+function nearestUpstairsChair(local) {
+  if (!local || currentZone !== 'penthouse' || local.position.y < 1.5) return null;
+  const chairs = [
+    {id:'up-lounge-chair',x:-6.2,z:4.45},
+    {id:'up-office-chair',x:5.2,z:4.55},
+    {id:'up-game-chair',x:-5.0,z:2.65},
+    {id:'up-guest-chair',x:6.8,z:-2.1}
+  ];
+  return chairs.map((chair)=>({...chair,distance:Math.hypot(local.position.x-chair.x,local.position.z-chair.z)})).sort((a,b)=>a.distance-b.distance)[0] || null;
 }
 
 function setPlayerActivity(action, danceStyle = 'groove') {
