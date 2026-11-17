@@ -15,7 +15,7 @@ function expressStub() {
 expressStub.static = () => (_req, _res, next) => next?.();
 
 class FakeIO {
-  constructor() { this.handlers = {}; this.clients = new Map(); ioInstance = this; }
+  constructor(options = {}) { this.options = options; this.handlers = {}; this.clients = new Map(); ioInstance = this; }
   on(event, fn) { this.handlers[event] = fn; }
   to(roomOrId) {
     return { emit: (event, payload) => {
@@ -55,6 +55,7 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 (async () => {
   const io = ioInstance;
+  assert.equal(io.options.connectionStateRecovery?.maxDisconnectionDuration, 120000, 'Socket.IO connection recovery is enabled for short network drops');
   const a = io.connect('player-A');
   const b = io.connect('player-B');
   let roomResponse;
