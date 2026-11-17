@@ -92,6 +92,14 @@ async function setupRegionPicker() {
 const params = new URLSearchParams(window.location.search);
 const invitedRoom = (params.get('room') || '').toUpperCase();
 let selectedCharacter = 'tom';
+const ROOM_TYPES = {
+  penthouse: { name: 'Penthouse', subtitle: 'City views · Rooftop · Garage', greeting: 'Welcome to the penthouse' },
+  music: { name: 'Music Lounge', subtitle: 'Your shared music hangout', greeting: 'Welcome to the Music Lounge' },
+  cozy: { name: 'Cozy Retreat', subtitle: 'A relaxed space to unwind', greeting: 'Welcome to the Cozy Retreat' },
+  game: { name: 'Game Night', subtitle: 'A place to meet and play', greeting: 'Welcome to Game Night' }
+};
+let selectedRoomType = 'penthouse';
+let activeRoomType = 'penthouse';
 let activeRoomId = '';
 let selfId = '';
 let players = [];
@@ -159,6 +167,20 @@ function setLobbyMode() {
   $('topStatus').textContent = invitedRoom ? 'You have a penthouse invitation' : 'Your little world awaits';
 }
 
+function selectRoomType(type) {
+  if (!ROOM_TYPES[type] || invitedRoom) return;
+  selectedRoomType = type;
+  document.querySelectorAll('.room-choice').forEach((button) => {
+    const selected = button.dataset.roomType === type;
+    button.classList.toggle('selected', selected);
+    button.setAttribute('aria-pressed', String(selected));
+  });
+}
+
+document.querySelectorAll('.room-choice').forEach((button) => {
+  button.addEventListener('click', () => selectRoomType(button.dataset.roomType));
+});
+
 function selectCharacter(character) {
   if (!CHARACTER_INFO[character]) return;
   selectedCharacter = character;
@@ -191,6 +213,7 @@ function enterRoom(response) {
     return;
   }
   activeRoomId = response.roomId;
+  activeRoomType = ROOM_TYPES[response.roomType] ? response.roomType : 'penthouse';
   selfId = response.selfId || socket.id;
   players = response.players || [];
   vehicles = response.vehicles || [];
@@ -201,7 +224,8 @@ function enterRoom(response) {
   setupMobileControls();
 
   $('topStatus').textContent = 'You are home';
-  $('roomSubtitle').textContent = `${players.length} / 8 in the penthouse`;
+  $('activeRoomName').textContent = activeRoomType === 'penthouse' ? 'Our Penthouse' : ROOM_TYPES[activeRoomType].name;
+  $('roomSubtitle').textContent = `${players.length} / 8 · ${ROOM_TYPES[activeRoomType].subtitle}`;
   const url = new URL(window.location.href);
   url.searchParams.set('room', activeRoomId);
   history.replaceState({}, '', url.toString());
@@ -221,7 +245,7 @@ function enterRoom(response) {
 }
 
 function createHouse() {
-  socket.emit('room:create', getProfile(), (response) => enterRoom(response));
+  socket.emit('room:create', { profile: getProfile(), roomType: selectedRoomType }, (response) => enterRoom(response));
 }
 
 function joinHouse(roomId) {
@@ -251,6 +275,7 @@ $('leaveButton').addEventListener('click', () => {
     world = null;
   }
   activeRoomId = '';
+  activeRoomType = 'penthouse';
   selfId = '';
   players = [];
   vehicles = [];
@@ -281,7 +306,7 @@ socket.on('room:players', (nextPlayers) => {
   const previousCount = players.length;
   players = nextPlayers || [];
   updatePlayers(players);
-  $('roomSubtitle').textContent = `${players.length} / 8 in the penthouse`;
+  $('roomSubtitle').textContent = `${players.length} / 8 · ${ROOM_TYPES[activeRoomType]?.subtitle || ROOM_TYPES.penthouse.subtitle}`;
   currentZone = players.find((player) => player.id === selfId)?.zone || currentZone;
   syncVoicePeers(players);
   if (players.length > previousCount && previousCount > 0) showToast('Someone just arrived at the penthouse ♡');
