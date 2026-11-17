@@ -1154,7 +1154,7 @@ function createHouseScene(scene, colliders) {
 
   // Large furniture also blocks walking, so characters naturally use the clear paths.
   colliders.push(
-    ...(activeRoomType === 'music' || activeRoomType === 'garden' ? [] : [
+    ...(activeRoomType === 'penthouse' || activeRoomType === 'music' || activeRoomType === 'garden' ? [] : [
       { minX: -6.75, maxX: -3.65, minZ: 5.62, maxZ: 6.72 }, // living sofa
       { minX: -6.85, maxX: -3.45, minZ: .30, maxZ: 1.12 }, // TV console
       { minX: -6.0, maxX: -4.0, minZ: 3.38, maxZ: 4.52 }, // coffee table
@@ -1173,6 +1173,42 @@ function createHouseScene(scene, colliders) {
     { minX: 6.25, maxX: 7.25, minZ: -2.95, maxZ: -1.5 }, // bathroom vanity
     { minX: 7.55, maxX: 8.45, minZ: -4.5, maxZ: -3.35 } // toilet
   );
+
+  // The Penthouse Mini Mart is an actual walk-in shop inside the living-room wing.
+  if (activeRoomType === 'penthouse') {
+    const martGlass = new THREE.MeshPhysicalMaterial({ color: 0xa8d9d8, transparent: true, opacity: .34, roughness: .12, metalness: .12, transmission: .2 });
+    ['sofa-base','sofa-back','sofa-arm-left','sofa-arm-right','sofa-cushion','sofa-pillow','tv-console','living-tv-body','living-tv-screen','living-tv-stand','coffee-table','coffee-table-leg','living-vase','living-flower','living-bookcase','living-bookcase-shelf','living-book'].forEach((prefix) => {
+      scene.children.filter((o) => o.name.startsWith(prefix)).forEach((o) => { o.visible = false; });
+    });
+    addBox(scene, 'penthouse-mart-floor', [6.0, .08, 5.9], [-5.2, .08, 4.15], 0xc6b9a7, { roughness: .72 });
+    addBox(scene, 'penthouse-mart-back-wall', [6.1, 2.8, .18], [-5.2, 1.48, 7.12], 0x6b5550);
+    addBox(scene, 'penthouse-mart-left-wall', [.18, 2.8, 5.9], [-8.25, 1.48, 4.15], 0x6b5550);
+    addBox(scene, 'penthouse-mart-right-wall', [.18, 2.8, 5.9], [-2.15, 1.48, 4.15], 0x6b5550);
+    addBox(scene, 'penthouse-mart-front-left', [2.1, 2.8, .18], [-7.2, 1.48, 1.2], 0x6b5550);
+    addBox(scene, 'penthouse-mart-front-right', [2.1, 2.8, .18], [-3.2, 1.48, 1.2], 0x6b5550);
+    addBox(scene, 'penthouse-mart-glass-left', [.06, 1.85, .95], [-6.12, 1.62, 1.2], 0xa8d9d8, { material: martGlass });
+    addBox(scene, 'penthouse-mart-glass-right', [.06, 1.85, .95], [-4.28, 1.62, 1.2], 0xa8d9d8, { material: martGlass });
+    addBox(scene, 'penthouse-mart-sign-board', [4.0, .58, .12], [-5.2, 3.0, 1.15], 0x344d4c);
+    addRoomSign(scene, 'PENTHOUSE MINI MART', [-5.2, 3.05, 1.05], '#d8f1cb');
+    [-7.25, -3.15].forEach((x, side) => {
+      addBox(scene, 'penthouse-mart-shelf', [.62, 1.65, 3.7], [x, .88, 4.15], 0x806a5b);
+      for (let row = 0; row < 3; row++) for (let col = 0; col < 3; col++) {
+        addBox(scene, 'penthouse-mart-grocery', [.42, .34, .38], [x, .48 + row * .48, 2.8 + col * 1.05], [0xc98b66, 0x8da98b, 0xd6c08b, 0x9aabc2, 0xb88c98][(row + col + side) % 5]);
+      }
+    });
+    addBox(scene, 'penthouse-mart-counter', [1.7, .95, .58], [-5.2, .48, 6.45], 0x715347);
+    addBox(scene, 'penthouse-mart-counter-top', [1.85, .12, .68], [-5.2, 1.0, 6.45], 0xd5c0a5);
+    addBox(scene, 'penthouse-mart-checkout-screen', [.28, .24, .12], [-5.2, 1.2, 6.25], 0x26353a);
+    colliders.push(
+      { minX: -8.4, maxX: -8.1, minZ: 1.1, maxZ: 7.2 },
+      { minX: -2.3, maxX: -2.0, minZ: 1.1, maxZ: 7.2 },
+      { minX: -8.25, maxX: -6.15, minZ: 1.05, maxZ: 1.35 },
+      { minX: -4.25, maxX: -2.15, minZ: 1.05, maxZ: 1.35 },
+      { minX: -7.55, maxX: -6.95, minZ: 2.2, maxZ: 6.1 },
+      { minX: -3.45, maxX: -2.85, minZ: 2.2, maxZ: 6.1 },
+      { minX: -6.1, maxX: -4.3, minZ: 6.15, maxZ: 6.8 }
+    );
+  }
 
   // ---------------- Luxury rooftop terrace & private garage ----------------
   addRoomSign(scene, 'Rooftop terrace', [14.9, 2.55, -6.95], '#d7e8ec');
@@ -1315,37 +1351,7 @@ function createHouseScene(scene, colliders) {
   }
   addElevatorStation([19.2, 0, -6.0], 'penthouse');
 
-  // Walk-in Penthouse Mini Mart: physical walls, glass storefront, open doorway, shelves and counter.
-  const martGlass = new THREE.MeshPhysicalMaterial({ color: 0xa8d9d8, transparent: true, opacity: .34, roughness: .12, metalness: .12, transmission: .2 });
-  addBox(scene, 'penthouse-mart-floor', [6.2, .08, 5.2], [14.45, .08, -.55], 0xc6b9a7, { roughness: .72 });
-  addBox(scene, 'penthouse-mart-back-wall', [6.2, 2.8, .18], [14.45, 1.48, -3.15], 0x6b5550);
-  addBox(scene, 'penthouse-mart-left-wall', [.18, 2.8, 5.2], [11.35, 1.48, -.55], 0x6b5550);
-  addBox(scene, 'penthouse-mart-right-wall', [.18, 2.8, 5.2], [17.55, 1.48, -.55], 0x6b5550);
-  addBox(scene, 'penthouse-mart-front-left', [1.65, 2.8, .18], [12.0, 1.48, 2.05], 0x6b5550);
-  addBox(scene, 'penthouse-mart-front-right', [1.65, 2.8, .18], [16.9, 1.48, 2.05], 0x6b5550);
-  addBox(scene, 'penthouse-mart-glass-left', [.06, 1.85, 1.05], [12.95, 1.62, 2.0], 0xa8d9d8, { material: martGlass });
-  addBox(scene, 'penthouse-mart-glass-right', [.06, 1.85, 1.05], [15.95, 1.62, 2.0], 0xa8d9d8, { material: martGlass });
-  addBox(scene, 'penthouse-mart-sign-board', [4.1, .62, .12], [14.45, 3.05, 2.0], 0x344d4c);
-  addRoomSign(scene, 'PENTHOUSE MINI MART', [14.45, 3.12, 1.9], '#d8f1cb');
-  // Grocery aisles are arranged along the sides, leaving a clear central walking aisle.
-  [12.25, 16.65].forEach((x, side) => {
-    addBox(scene, 'penthouse-mart-shelf', [.62, 1.65, 3.25], [x, .88, -.55], 0x806a5b);
-    for (let row = 0; row < 3; row++) for (let col = 0; col < 3; col++) {
-      addBox(scene, 'penthouse-mart-grocery', [.42, .34, .38], [x, .48 + row * .48, -1.65 + col * 1.05], [0xc98b66, 0x8da98b, 0xd6c08b, 0x9aabc2, 0xb88c98][(row + col + side) % 5]);
-    }
-  });
-  addBox(scene, 'penthouse-mart-counter', [1.7, .95, .58], [14.45, .48, -2.55], 0x715347);
-  addBox(scene, 'penthouse-mart-counter-top', [1.85, .12, .68], [14.45, 1.0, -2.55], 0xd5c0a5);
-  addBox(scene, 'penthouse-mart-checkout-screen', [.28, .24, .12], [14.45, 1.2, -2.35], 0x26353a);
-  colliders.push(
-    { minX: 11.2, maxX: 11.5, minZ: -3.2, maxZ: 2.2 },
-    { minX: 17.4, maxX: 17.7, minZ: -3.2, maxZ: 2.2 },
-    { minX: 11.5, maxX: 12.85, minZ: 1.9, maxZ: 2.2 },
-    { minX: 16.05, maxX: 17.4, minZ: 1.9, maxZ: 2.2 },
-    { minX: 12.0, maxX: 12.55, minZ: -2.25, maxZ: 1.15 },
-    { minX: 16.35, maxX: 16.9, minZ: -2.25, maxZ: 1.15 },
-    { minX: 13.55, maxX: 15.35, minZ: -2.95, maxZ: -2.1 }
-  );
+
 
   // A compact, walkable skywalk district expands the shared map beyond the rooftop.
   addBox(scene, 'city-district-foundation', [39.5, .18, 35.5], [46.35, -.18, 0], 0x46515d, { roughness: .9, castShadow: false });
@@ -1848,7 +1854,7 @@ function animateWorld() {
     const station = currentZone === 'city' ? { x: 28.5, z: 0 } : { x: 19.2, z: -6.0 };
     const nearElevator = Math.hypot(local.position.x - station.x, local.position.z - station.z) < 3.6;
     $('elevatorButton').disabled = !nearElevator || Boolean(activeVehicleId);
-    const nearMall = currentZone === 'penthouse' && Math.hypot(local.position.x - 14.45, local.position.z - 2.75) < 3.6;
+    const nearMall = currentZone === 'penthouse' && Math.hypot(local.position.x + 5.2, local.position.z - .45) < 3.6;
     $('mallButton').disabled = !nearMall || Boolean(activeVehicleId);
     $('mallButton').classList.toggle('mall-nearby', nearMall);
     $('elevatorButton').textContent = currentZone === 'city' ? '↕ Elevator · Home (F)' : '↕ Elevator · City (F)';
@@ -1959,7 +1965,7 @@ function renderMall() {
 function openMall() {
   if (currentZone !== 'penthouse') return showToast('The mini mart is inside the penthouse only.');
   const local = world && world.playerObjects.get(selfId);
-  if (!local || Math.hypot(local.position.x - 14.45, local.position.z - 2.75) > 4.2) return showToast('Walk through the Penthouse Mini Mart entrance first.');
+  if (!local || Math.hypot(local.position.x + 5.2, local.position.z - .45) > 4.2) return showToast('Walk through the Penthouse Mini Mart entrance first.');
   $('mallPanel').classList.remove('hidden');
   $('activitiesPanel').classList.add('hidden');
   $('wardrobePanel').classList.add('hidden');
