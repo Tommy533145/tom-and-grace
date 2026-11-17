@@ -20,6 +20,7 @@ const io = new Server(server, {
 
 const PORT = Number(process.env.PORT) || 3000;
 const MAX_PLAYERS_PER_ROOM = 8;
+const MAX_MUSIC_QUEUE_ITEMS = 50;
 const rooms = new Map();
 
 const OUTFIT_COLORS = new Set(['cream', 'rose', 'midnight', 'sage', 'lavender', 'black', 'sky', 'cherry']);
@@ -473,6 +474,9 @@ io.on('connection', (socket) => {
     if (typeof videoId !== 'string' || !/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
       return callback?.({ ok: false, error: 'Paste a valid YouTube video link or ID.' });
     }
+    if (room.musicQueue.length >= MAX_MUSIC_QUEUE_ITEMS) {
+      return callback?.({ ok: false, error: `The shared queue is full (${MAX_MUSIC_QUEUE_ITEMS} tracks maximum).` });
+    }
     const wasEmpty = room.musicQueue.length === 0;
     room.musicQueue.push({ id: crypto.randomBytes(5).toString('hex'), videoId, addedBy: player.name });
     if (wasEmpty) playQueuedTrack(roomId, room, 0);
@@ -485,9 +489,9 @@ io.on('connection', (socket) => {
     const room = roomId && getRoom(roomId);
     const player = room?.players.get(socket.id);
     if (!room || !player) return callback?.({ ok: false, error: 'Join a room before sharing a playlist.' });
-    if (!Array.isArray(videoIds) || videoIds.length < 1 || videoIds.length > 100 ||
+    if (!Array.isArray(videoIds) || videoIds.length < 1 || videoIds.length > MAX_MUSIC_QUEUE_ITEMS ||
         videoIds.some((id) => typeof id !== 'string' || !/^[a-zA-Z0-9_-]{11}$/.test(id))) {
-      return callback?.({ ok: false, error: 'Playlist must contain 1 to 100 valid YouTube video IDs.' });
+      return callback?.({ ok: false, error: 'Playlist must contain 1 to 50 valid YouTube video IDs.' });
     }
     room.musicQueue = videoIds.map((videoId) => ({
       id: crypto.randomBytes(5).toString('hex'), videoId, addedBy: player.name
