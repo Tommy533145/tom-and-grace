@@ -155,11 +155,25 @@ function showToast(message) {
   toastTimer = setTimeout(() => toast.classList.remove('show'), 2800);
 }
 
+function getClientId() {
+  const key = 'tg-multiplayer-client-id';
+  try {
+    let id = sessionStorage.getItem(key);
+    if (!id) {
+      id = window.crypto?.randomUUID?.() || `tg-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+      sessionStorage.setItem(key, id);
+    }
+    return id;
+  } catch (_error) {
+    return window.crypto?.randomUUID?.() || `tg-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  }
+}
+
 function getProfile() {
   const defaultName = CHARACTER_INFO[selectedCharacter]?.label || 'Friend';
   const name = $('playerName').value.trim().slice(0, 18) || defaultName;
   const outfit = { ...currentOutfit, color: currentOutfit.color || DEFAULT_OUTFIT_COLORS[selectedCharacter] };
-  return { name, character: selectedCharacter, outfit };
+  return { clientId: getClientId(), name, character: selectedCharacter, outfit };
 }
 
 function setLobbyMode() {
@@ -397,6 +411,7 @@ socket.on('disconnect', (reason) => {
   const currentPlayer = players.find((player) => player.id === selfId);
   if (currentPlayer) {
     activeProfile = {
+      clientId: activeProfile?.clientId || getClientId(),
       name: currentPlayer.name,
       character: currentPlayer.character,
       outfit: { ...(currentPlayer.outfit || {}) }
@@ -411,8 +426,11 @@ socket.on('disconnect', (reason) => {
 socket.on('connect', () => {
   if (!activeRoomId || isRejoiningRoom) return;
   if (socket.recovered) {
-    $('topStatus').textContent = 'Connection restored';
-    showToast('Connection restored. You are back in your room ♡');
+    socket.emit('room:sync', {}, (response) => {
+      if (response?.ok) enterRoom(response);
+      $('topStatus').textContent = response?.ok ? 'Connection restored' : 'Reconnect failed';
+      showToast(response?.ok ? 'Connection restored. You are back in your room ♡' : (response?.error || 'Could not restore your room. Please rejoin.'));
+    });
     return;
   }
 
