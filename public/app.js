@@ -1841,7 +1841,9 @@ function updatePlayers(nextPlayers) {
     object.userData.networkMoving = Boolean(player.moving);
     object.userData.action = player.action || 'none';
     object.userData.danceStyle = player.danceStyle || 'groove';
-    object.userData.bedId = player.bedId || null;\n    object.userData.chairId = player.chairId || null;\n    object.userData.floorY = Number(player.position?.y) || 0;
+    object.userData.bedId = player.bedId || null;
+    object.userData.chairId = player.chairId || null;
+    object.userData.floorY = Number(player.position?.y) || 0;
     object.userData.zone = player.zone || 'penthouse';
     if (player.id === selfId) currentZone = player.zone || currentZone;
     object.visible = !player.vehicleId;
@@ -2065,7 +2067,13 @@ function animateWorld() {
       }
       if (torso) torso.scale.y = 1 + Math.sin(now * .0018 + phase) * .018;
       if (head) head.rotation.z = Math.sin(now * .0018 + phase) * .012;
-    } else if (action === 'sit') {\n      object.rotation.x = 0; object.rotation.z = 0;\n      if (object.visible) object.position.y = (Number(object.userData.floorY) || 0) + .02;\n      if (limbs) { limbs.leftArm.rotation.x = -.12; limbs.rightArm.rotation.x = -.12; limbs.leftArm.rotation.z = -.12; limbs.rightArm.rotation.z = .12; limbs.leftLeg.rotation.x = -1.12; limbs.rightLeg.rotation.x = -1.12; }\n      if (torso) torso.scale.y = 1;\n      if (head) head.rotation.z = 0;\n    } else if (action === 'dance') {
+    } else if (action === 'sit') {
+      object.rotation.x = 0; object.rotation.z = 0;
+      if (object.visible) object.position.y = (Number(object.userData.floorY) || 0) + .02;
+      if (limbs) { limbs.leftArm.rotation.x = -.12; limbs.rightArm.rotation.x = -.12; limbs.leftArm.rotation.z = -.12; limbs.rightArm.rotation.z = .12; limbs.leftLeg.rotation.x = -1.12; limbs.rightLeg.rotation.x = -1.12; }
+      if (torso) torso.scale.y = 1;
+      if (head) head.rotation.z = 0;
+    } else if (action === 'dance') {
       object.rotation.x = 0;
       const style = object.userData.danceStyle || 'groove';
       const speed = style === 'sway' ? 1.4 : style === 'salsa' ? 4.2 : 3.2;
