@@ -165,13 +165,14 @@ function getProfile() {
 
 function setLobbyMode() {
   $('inviteNotice').classList.toggle('hidden', !invitedRoom);
-  $('enterButtonText').textContent = invitedRoom ? 'Join the penthouse' : 'Create penthouse';
+  $('enterButtonText').textContent = invitedRoom ? 'Join the shared room' : 'Create ' + ROOM_TYPES[selectedRoomType].name;
   $('topStatus').textContent = invitedRoom ? 'You have a penthouse invitation' : 'Your little world awaits';
 }
 
 function selectRoomType(type) {
   if (!ROOM_TYPES[type] || invitedRoom) return;
   selectedRoomType = type;
+  $('enterButtonText').textContent = 'Create ' + ROOM_TYPES[type].name;
   document.querySelectorAll('.room-choice').forEach((button) => {
     const selected = button.dataset.roomType === type;
     button.classList.toggle('selected', selected);
@@ -1834,12 +1835,14 @@ const SHOP_ITEMS = [
 const SHOP_STORAGE_KEY = 'tg-mall-wallet-v1';
 let shopWallet = 250;
 let shopCart = {};
+let shopInventory = {};
 try {
   const savedShop = JSON.parse(localStorage.getItem(SHOP_STORAGE_KEY) || '{}');
   if (Number.isFinite(savedShop.wallet)) shopWallet = Math.max(0, savedShop.wallet);
+  if (savedShop.inventory && typeof savedShop.inventory === 'object') shopInventory = savedShop.inventory;
 } catch (_error) {}
 function saveShopWallet() {
-  localStorage.setItem(SHOP_STORAGE_KEY, JSON.stringify({ wallet: shopWallet }));
+  localStorage.setItem(SHOP_STORAGE_KEY, JSON.stringify({ wallet: shopWallet, inventory: shopInventory }));
 }
 function renderMall() {
   const products = $('mallProducts');
@@ -1851,6 +1854,8 @@ function renderMall() {
   const total = SHOP_ITEMS.reduce((sum, item) => sum + item.price * (shopCart[item.id] || 0), 0);
   $('mallWallet').textContent = 'Wallet: ' + shopWallet + ' coins';
   $('mallCartTotal').textContent = 'Cart: ' + total + ' coins';
+  const bag = SHOP_ITEMS.filter((item) => shopInventory[item.id]).map((item) => (shopInventory[item.id] + '× ' + item.name));
+  $('mallBag').textContent = bag.length ? 'Your bag: ' + bag.join(' · ') : 'Your bag is empty.';
   $('mallCheckout').disabled = total <= 0 || total > shopWallet;
 }
 function openMall() {
@@ -1877,7 +1882,10 @@ $('mallCheckout').addEventListener('click', () => {
   const total = SHOP_ITEMS.reduce((sum, item) => sum + item.price * (shopCart[item.id] || 0), 0);
   if (!total || total > shopWallet) return renderMall();
   shopWallet -= total;
-  const purchased = SHOP_ITEMS.filter((item) => shopCart[item.id]).map((item) => shopCart[item.id] + '× ' + item.name).join(', ');
+  const purchased = SHOP_ITEMS.filter((item) => shopCart[item.id]).map((item) => {
+    shopInventory[item.id] = (shopInventory[item.id] || 0) + shopCart[item.id];
+    return shopCart[item.id] + '× ' + item.name;
+  }).join(', ');
   shopCart = {};
   saveShopWallet();
   renderMall();
