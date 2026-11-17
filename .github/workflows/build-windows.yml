@@ -30,7 +30,7 @@ jobs:
       - name: Run multiplayer smoke tests
         run: npm run test:smoke
       - name: Build Windows installer
-        run: npm run build:win
+        run: npm run build:win -- --publish never
       - uses: actions/upload-artifact@v4
         with:
           name: TomAndGrace-Windows-Installer
