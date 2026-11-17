@@ -324,12 +324,15 @@ io.on('connection', (socket) => {
     const z = Number(position.z);
     const rotationY = Number(position.rotationY);
     if (!Number.isFinite(x) || !Number.isFinite(z)) return;
+    const upperFloor = player.zone === 'penthouse' && Number(position.y) >= 1.5;
     const bounds = player.zone === 'city'
-      ? { minX: 27.2, maxX: 92.0, minZ: -26.2, maxZ: 26.2 }
-      : { minX: -8.55, maxX: 21.2, minZ: -8.2, maxZ: 8.2 };
+      ? { minX: -90, maxX: 210, minZ: -130, maxZ: 130 }
+      : upperFloor
+        ? { minX: -8.4, maxX: 8.4, minZ: -7.4, maxZ: 7.4 }
+        : { minX: -8.55, maxX: 24.35, minZ: -8.2, maxZ: 8.2 };
     player.position = {
       x: Math.max(bounds.minX, Math.min(bounds.maxX, x)),
-      y: player.zone === 'city' ? 0 : (Number(position.y) >= 1.5 ? 3.36 : 0),
+      y: player.zone === 'city' ? 0 : (upperFloor ? 3.36 : 0),
       z: Math.max(bounds.minZ, Math.min(bounds.maxZ, z))
     };
     player.rotationY = Number.isFinite(rotationY) ? Math.max(-Math.PI * 8, Math.min(Math.PI * 8, rotationY)) : (player.rotationY || 0);
@@ -469,11 +472,11 @@ io.on('connection', (socket) => {
 
     if (player.zone === 'city') {
       player.zone = 'penthouse';
-      player.position = { x: 17.1, z: -6.0 };
+      player.position = { x: 17.1, y: 0, z: -6.0 };
       player.rotationY = Math.PI;
     } else {
       player.zone = 'city';
-      player.position = { x: 30.5, z: 0 };
+      player.position = { x: 30.5, y: 0, z: 0 };
       player.rotationY = Math.PI / 2;
     }
     player.moving = false;
@@ -557,7 +560,7 @@ io.on('connection', (socket) => {
     const z = Number(position.z);
     const yaw = Number(rotationY);
     if (!Number.isFinite(x) || !Number.isFinite(z) || !Number.isFinite(yaw)) return;
-    vehicle.position = vehicle.zone === 'city' ? {x:Math.max(30,Math.min(87,x)),z:Math.max(-2.55,Math.min(2.55,z))} : {x:Math.max(10.05,Math.min(21.0,x)),z:Math.max(-7.7,Math.min(7.7,z))};
+    vehicle.position = vehicle.zone === 'city' ? {x:Math.max(-90,Math.min(210,x)),z:Math.max(-130,Math.min(130,z))} : {x:Math.max(-8.5,Math.min(24.2,x)),z:Math.max(-7.7,Math.min(7.7,z))};
     vehicle.rotationY = Math.max(-Math.PI * 8, Math.min(Math.PI * 8, yaw));
     socket.to(roomId).emit('vehicle:move', {
       vehicleId: vehicle.id,
