@@ -144,6 +144,21 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   let elevatorOut;
   a.clientEmit('elevator:travel', {}, (response) => { elevatorOut = response; });
   assert.equal(elevatorOut?.zone, 'city', 'elevator reaches the city');
+
+  let wrongDistrictCar;
+  a.clientEmit('vehicle:enter', { vehicleId: 'sunset-coupe' }, (response) => { wrongDistrictCar = response; });
+  assert.equal(wrongDistrictCar?.ok, false, 'players cannot enter a penthouse car from the city');
+
+  a.clientEmit('player:move', { x: 35, z: -1.55, rotationY: 0, moving: false });
+  let cityCar;
+  a.clientEmit('vehicle:enter', { vehicleId: 'city-sport' }, (response) => { cityCar = response; });
+  assert.equal(cityCar?.ok, true, 'players can enter a nearby city car');
+  a.clientEmit('vehicle:move', { vehicleId: 'city-sport', position: { x: 999, z: 99 }, rotationY: Math.PI / 2 });
+  let cityCarExit;
+  a.clientEmit('vehicle:exit', {}, (response) => { cityCarExit = response; });
+  assert.equal(cityCarExit?.ok, true, 'players can exit a city car');
+  assert.ok(cityCarExit.position.x <= 88 && cityCarExit.position.z <= 4.8, 'city car exit position stays inside city bounds');
+
   a.clientEmit('player:move', { x: 28.5, z: 0, rotationY: 0, moving: false });
   let elevatorBack;
   a.clientEmit('elevator:travel', {}, (response) => { elevatorBack = response; });
@@ -155,4 +170,5 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   console.log('PASS bed proximity check, sleeping, wake-by-movement');
   console.log('PASS shared dance selection and animation state');
   console.log('PASS elevator travel and movement bounds');
+  console.log('PASS city car district checks, driving bounds and exit');
 })().catch((error) => { console.error(error); process.exitCode = 1; });
