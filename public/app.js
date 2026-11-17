@@ -937,7 +937,7 @@ function addHouseWall(scene, colliders, name, size, position, color = 0x735b56) 
 
 function createHouseScene(scene, colliders) {
   scene.background = new THREE.Color(0x9bb1c4);
-  scene.fog = new THREE.Fog(0x9bb1c4, 36, 76);
+  scene.fog = new THREE.Fog(0x9bb1c4, 52, 142);
 
   // Luxury tower podium and rooftop deck: the penthouse is a cutaway so the whole floor plan is playable.
   addBox(scene, 'tower-podium', [36, 3.6, 31], [5.5, -1.95, 0], 0x293441, { roughness: .65 });
@@ -1334,13 +1334,13 @@ function createHouseScene(scene, colliders) {
 
 
 
-  // A compact, walkable skywalk district expands the shared map beyond the rooftop.
-  addBox(scene, 'city-district-foundation', [39.5, .18, 35.5], [46.35, -.18, 0], 0x46515d, { roughness: .9, castShadow: false });
-  addBox(scene, 'city-promenade-road', [34.5, .035, 6.2], [45.6, -.075, 0], 0x252d37, { roughness: .95, castShadow: false });
-  addBox(scene, 'city-sidewalk-north', [25.5, .06, 3.2], [40.5, -.045, -5.0], 0x9c9a94, { castShadow: false });
-  addBox(scene, 'city-sidewalk-south', [25.5, .06, 3.2], [40.5, -.045, 5.0], 0x9c9a94, { castShadow: false });
+  // A larger, walkable city district with room for a second block of streets.
+  addBox(scene, 'city-district-foundation', [67.5, .18, 53.5], [60.25, -.18, 0], 0x46515d, { roughness: .9, castShadow: false });
+  addBox(scene, 'city-promenade-road', [63.5, .035, 6.2], [59.0, -.075, 0], 0x252d37, { roughness: .95, castShadow: false });
+  addBox(scene, 'city-sidewalk-north', [61.0, .06, 3.2], [58.0, -.045, -5.0], 0x9c9a94, { castShadow: false });
+  addBox(scene, 'city-sidewalk-south', [61.0, .06, 3.2], [58.0, -.045, 5.0], 0x9c9a94, { castShadow: false });
   [-1.7, 1.7].forEach((z) => {
-    addBox(scene, 'city-road-line', [32.5, .025, .055], [45.0, -.035, z], 0xe6d4a9, { castShadow: false });
+    addBox(scene, 'city-road-line', [61.5, .025, .055], [58.5, -.035, z], 0xe6d4a9, { castShadow: false });
   });
   // Mid-rise facades with lit windows, awnings and street-level storefronts.
   const cityBuildings = [
@@ -1381,11 +1381,25 @@ function createHouseScene(scene, colliders) {
     addCylinder(scene, 'city-lamp-post', .045, .06, 3.0, [34.0, 1.5, side * 7.0], 0x343b43);
     addSphere(scene, 'city-lamp-globe', .19, [34.0, 3.05, side * 7.0], 0xf2d7a8);
   });
+  // New city blocks: apartment towers, hotel, office, shopping arcade and parking.
+  const outerBlocks=[{x:57,z:-20.8,w:5.6,d:6,h:15.5,c:0x536b7c,kind:'RESIDENCES'},{x:65,z:-20.8,w:6.2,d:6,h:20,c:0x6d687a,kind:'CITY HOTEL'},{x:74,z:-20.8,w:6.4,d:6,h:17,c:0x687d79,kind:'OFFICES'},{x:83,z:-20.8,w:6,d:6,h:13.5,c:0x827267,kind:'SHOPPING ARCADE'},{x:58,z:20.8,w:6,d:6,h:12.5,c:0x776a72,kind:'APARTMENTS'},{x:67,z:20.8,w:6.5,d:6,h:18.5,c:0x5f7188,kind:'BUSINESS TOWER'},{x:76,z:20.8,w:6.4,d:6,h:15,c:0x7c7c70,kind:'CITY MARKET'},{x:85,z:20.8,w:5.8,d:6,h:11.5,c:0x657b78,kind:'PARKING'}];
+  outerBlocks.forEach((b,index)=>{
+    addBox(scene,`outer-city-building-${index}`,[b.w,b.h,b.d],[b.x,b.h/2-.12,b.z],b.c,{roughness:.62,metalness:.12});
+    const frontZ=b.z<0?b.z+b.d/2+.045:b.z-b.d/2-.045;
+    const glass=new THREE.MeshStandardMaterial({color:0xb9d7df,emissive:0x526f80,emissiveIntensity:.28,metalness:.28,roughness:.22});
+    const floors=Math.floor((b.h-1.8)/2),windows=Math.max(3,Math.floor((b.w-.8)/1.05));
+    for(let row=0;row<floors;row++)for(let col=0;col<windows;col++){if((row*3+col+index)%5===0)continue;addBox(scene,`outer-city-window-${index}-${row}-${col}`,[.62,.92,.045],[b.x-b.w/2+.62+col*1.05,1.15+row*2,frontZ],0x9fc8d2,{material:glass,castShadow:false});}
+    addBox(scene,`outer-city-entry-${index}`,[b.w*.62,1.7,.11],[b.x,.86,frontZ+(b.z<0?.05:-.05)],0x8eb4bc,{material:new THREE.MeshPhysicalMaterial({color:0x9ecbd1,transparent:true,opacity:.5,roughness:.12,metalness:.18})});
+    addRoomSign(scene,b.kind,[b.x,Math.min(3.2,b.h-.8),frontZ+(b.z<0?.12:-.12)],'#e6d6b8');
+    colliders.push({minX:b.x-b.w/2,maxX:b.x+b.w/2,minZ:b.z-b.d/2,maxZ:b.z+b.d/2});
+  });
+  for(let i=0;i<8;i++){const x=55+i*4.6,z=i%2?7.2:-7.2;addBox(scene,'outer-city-planter',[1.45,.5,1.25],[x,.2,z],0x53675a);addCylinder(scene,'outer-city-tree-trunk',.12,.16,1.55,[x,1,z],0x765743);addSphere(scene,'outer-city-tree-crown',.82,[x,2,z],0x5f876d,[1.05,1.1,.95]);const lamp=new THREE.PointLight(0xffd2a0,.34,6);lamp.position.set(x+1.4,2.7,z*1.18);scene.add(lamp);}
+  addBox(scene,'city-cross-street',[7.5,.04,34],[89,-.06,0],0x252d37,{roughness:.95,castShadow:false});addBox(scene,'city-cross-street-marking',[.06,.025,28],[89,-.025,0],0xe6d4a9,{castShadow:false});addBox(scene,'city-parking-plaza',[5.4,.08,10],[88,-.02,-10],0x777d82,{castShadow:false});for(let i=0;i<5;i++)addBox(scene,'city-parking-bay',[.06,.025,3.4],[86+(i%3)*1.35,.035,-13.1+Math.floor(i/3)*5.8],0xe9dfc9,{castShadow:false});
   // The city has open retail storefronts and public plazas; the playable mart is inside the penthouse.
   addElevatorStation([28.5, 0, 0], 'city');
   // Raised edge rails frame the walkable skywalk without enclosing the promenade.
-  addBox(scene, 'city-edge-north', [27.2, .8, .12], [40.35, .4, -17.7], 0x8b9da4);
-  addBox(scene, 'city-edge-south', [27.2, .8, .12], [40.35, .4, 17.7], 0x8b9da4);
+  addBox(scene, 'city-edge-north', [65.5, .8, .12], [59.2, .4, -27], 0x8b9da4);
+  addBox(scene, 'city-edge-south', [65.5, .8, .12], [59.2, .4, 27], 0x8b9da4);
   colliders.push(
     { minX: 30.45, maxX: 35.5, minZ: -16.0, maxZ: -10.0 },
     { minX: 37.35, maxX: 42.7, minZ: -16.0, maxZ: -10.0 },
@@ -1404,13 +1418,20 @@ function createHouseScene(scene, colliders) {
   );
 }
 
+const WEATHER_PRESETS={clear:{sky:0x8db9d5,fog:0xb8d0dc,near:90,far:190,sun:0xffe4bf,power:2.4,hemi:1.55,exposure:1.18,n:0},sunset:{sky:0xd68f78,fog:0xe4b09b,near:65,far:165,sun:0xffa36e,power:1.55,hemi:1.05,exposure:1.28,n:0},night:{sky:0x101a30,fog:0x26334b,near:48,far:135,sun:0x8da9e8,power:.32,hemi:.42,exposure:.82,n:0},rain:{sky:0x526477,fog:0x71808c,near:30,far:105,sun:0x9aacc2,power:.48,hemi:.7,exposure:.9,n:520},storm:{sky:0x303b50,fog:0x4b5668,near:24,far:90,sun:0x7c8ba7,power:.22,hemi:.38,exposure:.78,n:720},snow:{sky:0xa8bdca,fog:0xd0dce1,near:38,far:125,sun:0xd7e8f5,power:.82,hemi:1.05,exposure:1.02,n:380},fog:{sky:0x89949b,fog:0xc0c7c9,near:12,far:62,sun:0xc5cbd0,power:.58,hemi:.8,exposure:.92,n:0}};
+function clearWeatherParticles(){if(!world?.weather)return;world.scene.remove(world.weather.points);world.weather.points.geometry.dispose();world.weather.points.material.dispose();world.weather=null;}
+function applyWeather(kind,announce=false){if(!world)return;const p=WEATHER_PRESETS[kind]||WEATHER_PRESETS.clear;clearWeatherParticles();world.weatherKind=kind;world.scene.background.setHex(p.sky);world.scene.fog.color.setHex(p.fog);world.scene.fog.near=p.near;world.scene.fog.far=p.far;world.renderer.toneMappingExposure=p.exposure;world.sunLight.color.setHex(p.sun);world.sunLight.intensity=p.power;world.hemiLight.intensity=p.hemi;world.backGlow.intensity=kind==='night'?1:kind==='storm'?.35:.8;world.frontGlow.intensity=kind==='night'?.72:.5;const select=$('weatherSelect');if(select&&select.value!==kind)select.value=kind;
+if(p.n){const count=p.n,positions=new Float32Array(count*3),velocities=new Float32Array(count*3);for(let i=0;i<count;i++){positions[i*3]=(Math.random()-.5)*75;positions[i*3+1]=Math.random()*28;positions[i*3+2]=(Math.random()-.5)*65;velocities[i*3]=(Math.random()-.5)*(kind==='snow'?.65:.22);velocities[i*3+1]=kind==='snow'?.8+Math.random()*1.2:13+Math.random()*8;velocities[i*3+2]=(Math.random()-.5)*(kind==='snow'?.65:.22);}const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));const material=new THREE.PointsMaterial({color:kind==='snow'?0xf4f8ff:0xc8d9e8,size:kind==='snow'?.13:.055,transparent:true,opacity:kind==='snow'?.88:.62,depthWrite:false});const points=new THREE.Points(geometry,material);points.frustumCulled=false;world.scene.add(points);world.weather={points,positions,velocities,count,kind};}
+if(announce){const names={clear:'Clear day',sunset:'Golden sunset',night:'Night',rain:'Rain',storm:'Thunderstorm',snow:'Snow',fog:'Fog'};showToast('Weather changed: '+names[kind]);}}
+function updateWeather(delta,now){const w=world?.weather;if(!w)return;const center=world.cameraTarget;for(let i=0;i<w.count;i++){const j=i*3;w.positions[j]+=w.velocities[j]*delta;w.positions[j+1]-=w.velocities[j+1]*delta;w.positions[j+2]+=w.velocities[j+2]*delta;if(w.positions[j+1]<0){w.positions[j]=center.x+(Math.random()-.5)*70;w.positions[j+1]=18+Math.random()*12;w.positions[j+2]=center.z+(Math.random()-.5)*60;}if(w.kind==='snow')w.positions[j]+=Math.sin(now*.0005+i)*delta*.18;}w.points.geometry.attributes.position.needsUpdate=true;if(w.kind==='storm'&&Math.random()<.0015){world.sunLight.intensity=2.2;world.lightningUntil=now+100;}if(world.lightningUntil&&now>world.lightningUntil){world.sunLight.intensity=WEATHER_PRESETS.storm.power;world.lightningUntil=0;}}
+
 function initializeWorld() {
   const container = $('worldCanvas');
   if (world) return;
   const width = container.clientWidth || 900;
   const height = container.clientHeight || 600;
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(39, width / height, .1, 140);
+  const camera = new THREE.PerspectiveCamera(39, width / height, .1, 240);
   camera.position.set(5.0, 24.5, 29.5);
   camera.lookAt(5.2, 0.55, 0);
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -1423,11 +1444,12 @@ function initializeWorld() {
   renderer.toneMappingExposure = 1.12;
   container.appendChild(renderer.domElement);
 
-  scene.add(new THREE.HemisphereLight(0xffe5d1, 0x473a42, 1.35));
+  const hemi = new THREE.HemisphereLight(0xffe5d1, 0x473a42, 1.35);
+  scene.add(hemi);
   const sun = new THREE.DirectionalLight(0xffddc2, 2.1);
   sun.position.set(-3, 7, 5);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(1024, 1024);
+  sun.shadow.mapSize.set(2048, 2048);
   sun.shadow.camera.left = -12; sun.shadow.camera.right = 12; sun.shadow.camera.top = 12; sun.shadow.camera.bottom = -12;
   scene.add(sun);
   const backGlow = new THREE.PointLight(0xd98d91, .8, 9);
@@ -1455,7 +1477,9 @@ function initializeWorld() {
   const vehicleObjects = new Map();
   const cameraTarget = new THREE.Vector3(5.2, .55, 0);
   const cameraSpherical = new THREE.Spherical().setFromVector3(camera.position.clone().sub(cameraTarget));
-  world = { scene, camera, renderer, playerObjects, vehicleObjects, container, colliders, cameraTarget, cameraSpherical, lastFrame: performance.now(), localMoving: false };
+  world = { scene, camera, renderer, playerObjects, vehicleObjects, container, colliders, cameraTarget, cameraSpherical, sunLight: sun, hemiLight: hemi, backGlow, frontGlow, lastFrame: performance.now(), localMoving: false, weather: null, weatherKind: 'clear' };
+  applyWeather($('weatherSelect')?.value || 'clear');
+  $('weatherSelect')?.addEventListener('change', (event) => applyWeather(event.target.value, true));
   let orbitPointer = null;
   renderer.domElement.addEventListener('pointerdown', (event) => {
     if (event.button !== 0) return;
@@ -1479,7 +1503,7 @@ function initializeWorld() {
   renderer.domElement.addEventListener('wheel', (event) => {
     if (!world) return;
     event.preventDefault();
-    world.cameraSpherical.radius = THREE.MathUtils.clamp(world.cameraSpherical.radius + event.deltaY * .018, 22, 52);
+    world.cameraSpherical.radius = THREE.MathUtils.clamp(world.cameraSpherical.radius + event.deltaY * .018, 22, 76);
     world.camera.position.copy(world.cameraTarget).add(new THREE.Vector3().setFromSpherical(world.cameraSpherical));
     world.camera.lookAt(world.cameraTarget);
   }, { passive: false });
@@ -1708,7 +1732,7 @@ function animateWorld() {
       const stepX = (dx / length) * speed * delta;
       const stepZ = (dz / length) * speed * delta;
       const bounds = currentZone === 'city'
-        ? { minX: 27.2, maxX: 68.0, minZ: -17.0, maxZ: 17.0 }
+        ? { minX: 27.2, maxX: 92.0, minZ: -26.0, maxZ: 26.0 }
         : { minX: -8.55, maxX: 21.2, minZ: -8.05, maxZ: 8.05 };
       const nextX = THREE.MathUtils.clamp(local.position.x + stepX, bounds.minX, bounds.maxX);
       const nextZ = THREE.MathUtils.clamp(local.position.z + stepZ, bounds.minZ, bounds.maxZ);
@@ -1728,6 +1752,7 @@ function animateWorld() {
     }
   }
 
+  updateWeather(delta, now);
   world.playerObjects.forEach((object, id) => {
     if (id !== selfId && object.userData.targetPosition) {
       object.position.lerp(object.userData.targetPosition, Math.min(1, delta * 12));
