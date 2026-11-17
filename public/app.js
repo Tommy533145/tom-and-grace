@@ -1529,7 +1529,7 @@ function createHouseScene(scene, colliders) {
 
 
   // Continuous terrain beyond the old promenade limits lets players explore the wider map.
-  addBox(scene,'open-world-exploration-ground',[310,.28,270],[60,-.36,0],0x59645d,{roughness:.96,castShadow:false});
+  addBox(scene,'open-world-exploration-ground',[310,.20,270],[60,-.17,0],0x59645d,{roughness:.96,castShadow:false});
     // A larger, walkable city district with room for a second block of streets.
   addBox(scene, 'city-district-foundation', [67.5, .18, 53.5], [60.25, -.18, 0], 0x46515d, { roughness: .9, castShadow: false });
   addBox(scene, 'city-promenade-road', [63.5, .035, 6.2], [59.0, -.075, 0], 0x252d37, { roughness: .95, castShadow: false });
@@ -2147,8 +2147,9 @@ function animateWorld() {
       object.rotation.x = 0;
       object.rotation.z = 0;
       if (object.visible) {
-        if (swimming) object.position.y = .14 + Math.sin(now * .004 + phase) * .045;
-        else object.position.y = moving ? Math.abs(Math.sin(now * .012 + phase)) * .045 : Math.sin(now * .0015 + phase) * .012;
+        const floorY = Number(object.userData.floorY) || 0;
+        if (swimming) object.position.y = floorY + .14 + Math.sin(now * .004 + phase) * .045;
+        else object.position.y = floorY + (moving ? Math.abs(Math.sin(now * .012 + phase)) * .045 : Math.sin(now * .0015 + phase) * .012);
       }
       const limbCycle = now * (swimming ? .008 : .012) + phase;
       if (limbs) {
@@ -2285,6 +2286,9 @@ function travelFloor() {
       local.position.set(response.position.x, response.position.y || 0, response.position.z);
       local.userData.targetPosition.set(response.position.x, response.position.y || 0, response.position.z);
       local.userData.floorY = response.position.y || 0;
+      world.cameraTarget.set(response.position.x, (response.position.y || 0) + .55, response.position.z);
+      world.camera.position.copy(world.cameraTarget).add(new THREE.Vector3().setFromSpherical(world.cameraSpherical));
+      world.camera.lookAt(world.cameraTarget);
     }
     lastSentPosition = response.position || lastSentPosition;
     moveKeys.clear();
